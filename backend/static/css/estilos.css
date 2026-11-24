@@ -1,0 +1,283 @@
+
+/* ---------- 1. Fuentes (locales: la CSP solo permite font-src 'self') ---------- */
+@font-face { font-family: "Inter"; src: url("../vendor/fuentes/inter.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
+@font-face { font-family: "Inter Tight"; src: url("../vendor/fuentes/inter-tight.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; src: url("../vendor/fuentes/jetbrains-mono.woff2") format("woff2"); font-weight: 100 800; font-style: normal; font-display: swap; }
+
+/* ---------- 2. Paleta y medidas ---------- */
+:root {
+  /* Neutros */
+  --papel: #ffffff;          /* fondo de toda la app */
+  --niebla: #f7f7f6;         /* barra lateral, encabezado de tablas */
+  --bruma: #efefee;          /* hover, etiqueta de rol */
+  --linea: #e2e2e0;          /* bordes de 1 px */
+  --linea-fuerte: #c9c9c6;   /* borde de campos */
+  --gris-claro: #9a9a96;     /* placeholder, deshabilitado */
+  --gris: #6a6a67;           /* texto secundario */
+  --grafito: #3a3a38;        /* texto del menú, hover del botón */
+  --tinta: #141414;          /* texto y botón primario */
+
+  /* Acento (solo enlaces y foco) */
+  --enlace: #1c5fa8;
+  --enlace-suave: #eaf1f9;
+
+  /* Estados: fuerte para texto y puntos, suave para fondos */
+  --ok: #1d7a3e;       --ok-suave: #eaf4ee;
+  --aviso: #9a5b00;    --aviso-suave: #fbf1e2;
+  --critico: #b3261e;  --critico-suave: #fbeceb;
+  --apagado: #8a8a86;  --apagado-suave: #f2f2f1;
+
+  /* Tipografía */
+  --fuente: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --fuente-titulos: "Inter Tight", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --fuente-mono: "JetBrains Mono", Consolas, ui-monospace, monospace;
+
+  /* Medidas */
+  --radio: 4px;
+  --ancho-lateral: 240px;
+
+  color-scheme: light;
+}
+
+/* ---------- 3. Base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--papel);
+  color: var(--tinta);
+  font: 15px/1.55 var(--fuente);
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4 { margin: 0; font-family: var(--fuente-titulos); font-weight: 400; letter-spacing: -0.01em; }
+p { margin: 0; }
+a { color: var(--enlace); }
+img, svg { max-width: 100%; }
+code, .mono { font-family: var(--fuente-mono); font-size: 0.86em; }
+code { background: var(--bruma); padding: 2px 6px; border-radius: var(--radio); }
+:focus-visible { outline: 2px solid var(--enlace); outline-offset: 2px; }
+
+/* ---------- 4. Estructura de la app ---------- */
+.app { display: flex; min-height: 100vh; }
+
+.lateral {
+  width: var(--ancho-lateral);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--niebla);
+  border-right: 1px solid var(--linea);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+.marca { display: flex; align-items: center; gap: 12px; padding: 20px 20px 16px; text-decoration: none; color: var(--tinta); }
+.marca-logo {
+  width: 30px; height: 30px; flex-shrink: 0;
+  border: 1.5px solid var(--tinta); border-radius: 50%;
+  display: grid; place-items: center;
+}
+.marca-logo::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--tinta); }
+.marca-nombre { font-family: var(--fuente-titulos); font-weight: 500; font-size: 15px; line-height: 1.2; }
+.marca-sub { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gris); }
+.lateral-pie { border-top: 1px solid var(--linea); padding: 14px 20px; font-size: 12px; color: var(--gris); }
+
+.principal { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+.encabezado {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 12px 32px;
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid var(--linea);
+  backdrop-filter: blur(6px);
+}
+.encabezado h1 { font-size: 18px; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.usuario { display: flex; align-items: center; gap: 12px; font-size: 14px; }
+.usuario form { margin: 0; }
+
+.contenido { flex: 1; padding: 32px; }
+
+/* ---------- 5. Menú ---------- */
+.menu { flex: 1; display: grid; align-content: start; gap: 2px; padding: 8px 10px; }
+.menu-grupo { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gris); padding: 14px 10px 6px; }
+.menu-enlace {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radio);
+  color: var(--grafito);
+  font-size: 14px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.menu-enlace:hover { background: var(--bruma); color: var(--tinta); }
+.menu-enlace.activo { background: var(--papel); color: var(--tinta); font-weight: 600; box-shadow: inset 0 0 0 1px var(--linea); }
+.menu-contador { font-size: 11px; font-weight: 600; background: var(--critico); color: #fff; border-radius: 99px; padding: 1px 7px; }
+
+/* Menú horizontal para pantallas angostas */
+.menu-movil { display: none; }
+
+/* ---------- 6. Botones ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 9px 16px;
+  border: 1px solid var(--tinta);
+  border-radius: var(--radio);
+  background: var(--tinta);
+  color: var(--papel);
+  font: 500 14px/1.2 var(--fuente);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s, opacity 0.15s;
+}
+.btn:hover { background: var(--grafito); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primario { background: var(--tinta); color: var(--papel); }
+.btn-secundario { background: transparent; color: var(--tinta); }
+.btn-secundario:hover { background: var(--bruma); }
+.btn-peligro { background: var(--critico); border-color: var(--critico); color: #fff; }
+.btn-peligro:hover { background: var(--critico); opacity: 0.88; }
+.btn-texto { background: transparent; border-color: transparent; color: var(--tinta); padding-inline: 8px; }
+.btn-texto:hover { background: var(--bruma); }
+.btn-chico { padding: 6px 12px; font-size: 13px; }
+.btn-ancho { width: 100%; }
+
+/* ---------- 7. Paneles ---------- */
+.tarjeta, .panel { background: var(--papel); border: 1px solid var(--linea); border-radius: var(--radio); }
+.panel-encabezado {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--linea);
+}
+.panel-encabezado h3 { font-size: 17px; font-weight: 500; }
+.panel-cuerpo { padding: 20px; }
+.vacio { padding: 48px 24px; text-align: center; display: grid; gap: 8px; justify-items: center; }
+.vacio h2 { font-size: 22px; font-weight: 300; }
+.vacio p { color: var(--gris); max-width: 60ch; }
+
+/* ---------- 8. Etiquetas de estado ---------- */
+.etiqueta {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px;
+  border: 1px solid var(--linea-fuerte);
+  border-radius: 99px;
+  background: transparent;
+  color: var(--tinta);
+  font-size: 12px; font-weight: 500;
+  white-space: nowrap;
+}
+.etiqueta::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.etiqueta-ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); }
+.etiqueta-aviso { color: var(--aviso); border-color: color-mix(in srgb, var(--aviso) 40%, transparent); }
+.etiqueta-critico { color: var(--critico); border-color: color-mix(in srgb, var(--critico) 40%, transparent); }
+.etiqueta-apagado { color: var(--apagado); }
+.etiqueta-rol { background: var(--bruma); border-color: transparent; }
+.etiqueta-rol::before { display: none; }
+
+/* ---------- 9. Formularios ---------- */
+.campo-grupo { display: grid; gap: 6px; }
+.campo-grupo label { font-size: 13px; color: var(--gris); }
+.campo {
+  display: block; width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--linea-fuerte);
+  border-radius: var(--radio);
+  background: var(--papel);
+  color: var(--tinta);
+  font: 14px/1.4 var(--fuente);
+}
+.campo::placeholder { color: var(--gris-claro); }
+.campo:focus { outline: none; border-color: var(--tinta); box-shadow: 0 0 0 3px color-mix(in srgb, var(--enlace) 25%, transparent); }
+select.campo { width: auto; }
+
+/* ---------- 10. Mensajes ---------- */
+.mensajes { display: grid; gap: 8px; margin-bottom: 24px; }
+.mensaje { padding: 12px 16px; border: 1px solid; border-radius: var(--radio); font-size: 14px; }
+.mensaje-exito { background: var(--ok-suave); border-color: color-mix(in srgb, var(--ok) 30%, transparent); color: var(--ok); }
+.mensaje-error { background: var(--critico-suave); border-color: color-mix(in srgb, var(--critico) 30%, transparent); color: var(--critico); }
+.mensaje-aviso { background: var(--aviso-suave); border-color: color-mix(in srgb, var(--aviso) 30%, transparent); color: var(--aviso); }
+.mensaje-info { background: var(--enlace-suave); border-color: color-mix(in srgb, var(--enlace) 30%, transparent); color: var(--enlace); }
+
+/* ---------- 11. Tipografía de apoyo ---------- */
+.titulo-pantalla { font-family: var(--fuente-titulos); font-size: 30px; font-weight: 300; line-height: 1.1; }
+.rotulo { font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gris); }
+.cifra { font-family: var(--fuente-titulos); font-size: 34px; font-weight: 300; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.secundario { color: var(--gris); }
+.numeros { font-variant-numeric: tabular-nums; }
+
+/* ---------- 12. Tablas ---------- */
+.tabla-contenedor { overflow-x: auto; border: 1px solid var(--linea); border-radius: var(--radio); }
+.tabla { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tabla th {
+  padding: 10px 14px;
+  background: var(--niebla);
+  border-bottom: 1px solid var(--linea);
+  color: var(--gris);
+  font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase;
+  text-align: left; white-space: nowrap;
+}
+.tabla td { padding: 12px 14px; border-bottom: 1px solid var(--linea); vertical-align: top; }
+.tabla tr:last-child td { border-bottom: 0; }
+.tabla tbody tr:hover td { background: var(--niebla); }
+
+/* ---------- 13. Inicio de sesión ---------- */
+.acceso { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+.acceso-portada {
+  position: relative;
+  isolation: isolate;          /* las capas del fondo quedan detrás del texto */
+  overflow: hidden;
+  background: var(--tinta); color: var(--papel);
+  padding: 48px;
+  display: flex; flex-direction: column; justify-content: space-between; gap: 32px;
+}
+/* Capa 1: la foto, difuminada y con poca opacidad sobre el negro */
+.acceso-portada::before {
+  content: "";
+  position: absolute;
+  inset: -24px;                /* más grande que el panel para que el difuminado no deje bordes claros */
+  z-index: -1;
+  background: url("../img/login-fondo.avif") 68% center / cover no-repeat;
+  filter: blur(3px);
+  opacity: 0.50;
+}
+/* Capa 2: degradado oscuro arriba y abajo para que el texto se lea bien */
+.acceso-portada::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, rgba(20, 20, 20, 0.55) 0%, rgba(20, 20, 20, 0.05) 45%, rgba(20, 20, 20, 0.65) 100%);
+}
+.acceso-portada .marca { padding: 0; color: var(--papel); }
+.acceso-portada .marca-logo { border-color: var(--papel); }
+.acceso-portada .marca-logo::after { background: var(--papel); }
+.acceso-portada .marca-sub { color: rgba(255, 255, 255, 0.6); }
+.acceso-portada h2 { font-size: clamp(30px, 3.6vw, 46px); font-weight: 300; line-height: 1.08; max-width: 14ch; }
+.acceso-portada p { color: rgba(255, 255, 255, 0.72); max-width: 40ch; }
+.acceso-formulario { display: grid; align-content: center; justify-self: center; gap: 18px; width: 100%; max-width: 420px; padding: 48px 24px; }
+.acceso-formulario h1 { font-size: 30px; font-weight: 300; }
+.acceso-nota { font-size: 13px; color: var(--gris); }
+
+/* ---------- 14. Pantallas angostas ---------- */
+@media (max-width: 1023px) {
+  .lateral { display: none; }
+  .menu-movil {
+    display: flex; gap: 4px; overflow-x: auto;
+    padding: 8px 12px;
+    background: var(--niebla);
+    border-bottom: 1px solid var(--linea);
+  }
+  .menu-movil .menu-grupo { display: none; }
+  .encabezado { padding: 12px 16px; }
+  .contenido { padding: 24px 16px; }
+  .usuario-nombre, .usuario .etiqueta-rol { display: none; }
+}
+@media (max-width: 767px) {
+  .acceso { grid-template-columns: 1fr; }
+  .acceso-portada { padding: 32px 20px; }
+  .acceso-portada h2 { font-size: 30px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

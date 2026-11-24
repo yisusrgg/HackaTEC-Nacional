@@ -1,13 +1,17 @@
 {% with actual=request.resolver_match.url_name %}
 {% if perms.telemetria.ver_tablero %}
-  <a href="{% url 'tablero:resumen' %}" class="enlace-nav{% if actual == 'resumen' or actual == 'senal' %} enlace-nav-activo{% endif %}">Resumen</a>
-  <a href="{% url 'tablero:alertas' %}" class="enlace-nav{% if actual == 'alertas' %} enlace-nav-activo{% endif %}">Alertas</a>
-  <a href="{% url 'tablero:dispositivos' %}" class="enlace-nav{% if actual == 'dispositivos' %} enlace-nav-activo{% endif %}">Dispositivos</a>
+  <p class="menu-grupo">Monitoreo</p>
+  <a href="{% url 'tablero:resumen' %}" class="menu-enlace{% if actual == 'resumen' or actual == 'senal' %} activo{% endif %}"{% if actual == 'resumen' or actual == 'senal' %} aria-current="page"{% endif %}>Resumen</a>
+  <a href="{% url 'tablero:alertas' %}" class="menu-enlace{% if actual == 'alertas' %} activo{% endif %}"{% if actual == 'alertas' %} aria-current="page"{% endif %}>Alertas</a>
+  <a href="{% url 'tablero:dispositivos' %}" class="menu-enlace{% if actual == 'dispositivos' %} activo{% endif %}"{% if actual == 'dispositivos' %} aria-current="page"{% endif %}>Dispositivos</a>
+{% endif %}
+{% if perms.auditoria.ver_auditoria or user.is_staff %}
+  <p class="menu-grupo">Seguridad y sistema</p>
 {% endif %}
 {% if perms.auditoria.ver_auditoria %}
-  <a href="{% url 'tablero:seguridad' %}" class="enlace-nav{% if actual == 'seguridad' %} enlace-nav-activo{% endif %}">Seguridad</a>
+  <a href="{% url 'tablero:seguridad' %}" class="menu-enlace{% if actual == 'seguridad' %} activo{% endif %}"{% if actual == 'seguridad' %} aria-current="page"{% endif %}>Bitácora de seguridad</a>
 {% endif %}
 {% if user.is_staff %}
-  <a href="{% url 'admin:index' %}" class="enlace-nav">Administración</a>
+  <a href="{% url 'admin:index' %}" class="menu-enlace">Administración</a>
 {% endif %}
 {% endwith %}

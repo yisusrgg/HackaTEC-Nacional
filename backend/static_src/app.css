@@ -4,32 +4,86 @@
 @source "../templates";
 @source "../static/js";
 
+/* Fuentes servidas por Django (la CSP solo permite font-src 'self'). Se copian con: npm run vendor */
+@font-face { font-family: "Inter"; src: url("../vendor/fuentes/inter.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
+@font-face { font-family: "Inter Tight"; src: url("../vendor/fuentes/inter-tight.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; src: url("../vendor/fuentes/jetbrains-mono.woff2") format("woff2"); font-weight: 100 800; font-style: normal; font-display: swap; }
+
+/* Paleta: fondo blanco, neutros cálidos, color solo para estados */
+@theme {
+  --color-papel: #ffffff;
+  --color-niebla: #f7f7f6;
+  --color-bruma: #efefee;
+  --color-linea: #e2e2e0;
+  --color-linea-fuerte: #c9c9c6;
+  --color-gris-claro: #9a9a96;
+  --color-gris: #6a6a67;
+  --color-grafito: #3a3a38;
+  --color-tinta: #141414;
+
+  --color-enlace: #1c5fa8;
+  --color-enlace-suave: #eaf1f9;
+
+  --color-ok: #1d7a3e;
+  --color-ok-suave: #eaf4ee;
+  --color-aviso: #9a5b00;
+  --color-aviso-suave: #fbf1e2;
+  --color-critico: #b3261e;
+  --color-critico-suave: #fbeceb;
+  --color-apagado: #8a8a86;
+  --color-apagado-suave: #f2f2f1;
+
+  --font-sans: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Inter Tight", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+
+@layer base {
+  html { color-scheme: light; }
+  body { @apply bg-papel font-sans text-tinta; }
+  a { @apply text-enlace; }
+}
+
 @layer components {
+  /* Botones: negro sólido o contorno negro, radio de 4 px */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-sm border px-4 py-2 text-sm font-medium whitespace-nowrap transition focus:outline-none focus-visible:ring-2 focus-visible:ring-enlace focus-visible:ring-offset-2 disabled:opacity-50;
   }
-  .btn-primario {
-    @apply bg-blue-700 text-white hover:bg-blue-800 focus-visible:ring-blue-600;
-  }
-  .btn-secundario {
-    @apply border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 focus-visible:ring-slate-400;
-  }
-  .btn-peligro {
-    @apply bg-rose-600 text-white hover:bg-rose-700 focus-visible:ring-rose-500;
-  }
-  .tarjeta {
-    @apply rounded-xl border border-slate-200 bg-white shadow-sm;
-  }
-  .etiqueta {
-    @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium;
-  }
+  .btn-primario { @apply border-tinta bg-tinta text-papel hover:bg-grafito; }
+  .btn-secundario { @apply border-tinta bg-transparent text-tinta hover:bg-bruma; }
+  .btn-peligro { @apply border-critico bg-critico text-papel hover:opacity-90; }
+  .btn-chico { @apply px-3 py-1.5 text-[13px]; }
+
+  /* Paneles: borde fino, sin sombra */
+  .tarjeta { @apply rounded-sm border border-linea bg-papel; }
+  .tarjeta-encabezado { @apply flex flex-wrap items-center justify-between gap-3 border-b border-linea px-5 py-3.5; }
+
+  /* Etiquetas de estado: el punto toma el color del texto */
+  .etiqueta { @apply inline-flex items-center gap-1.5 rounded-full border border-linea-fuerte px-2.5 py-0.5 text-xs font-medium whitespace-nowrap text-tinta; }
+  .etiqueta-ok { @apply border-ok/40 text-ok; }
+  .etiqueta-aviso { @apply border-aviso/40 text-aviso; }
+  .etiqueta-critico { @apply border-critico/40 text-critico; }
+  .etiqueta-apagado { @apply border-linea-fuerte text-apagado; }
+  .etiqueta-rol { @apply border-transparent bg-bruma text-tinta; }
+  .punto { @apply size-2 shrink-0 rounded-full bg-current; }
+
+  /* Formularios */
   .campo {
-    @apply block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/30;
+    @apply block w-full rounded-sm border border-linea-fuerte bg-papel px-3 py-2.5 text-sm text-tinta placeholder:text-gris-claro focus:border-tinta focus:outline-none focus:ring-2 focus:ring-enlace/25;
   }
-  .enlace-nav {
-    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap text-slate-300 transition hover:bg-slate-800 hover:text-white;
-  }
-  .enlace-nav-activo {
-    @apply bg-slate-800 text-white;
-  }
+
+  /* Menú lateral claro */
+  .enlace-nav { @apply flex items-center justify-between gap-3 rounded-sm px-3 py-2 text-sm whitespace-nowrap text-grafito no-underline transition hover:bg-bruma hover:text-tinta; }
+  .enlace-nav-activo { @apply bg-papel font-semibold text-tinta ring-1 ring-linea ring-inset; }
+
+  /* Tipografía */
+  .titulo-pantalla { @apply font-display text-3xl leading-tight font-light tracking-tight; }
+  .rotulo { @apply text-xs font-medium tracking-wider text-gris uppercase; }
+  .cifra { @apply font-display text-4xl leading-none font-light tabular-nums; }
+
+  /* Mensajes de Django */
+  .mensaje { @apply rounded-sm border px-4 py-3 text-sm; }
+  .mensaje-exito { @apply border-ok/30 bg-ok-suave text-ok; }
+  .mensaje-error { @apply border-critico/30 bg-critico-suave text-critico; }
+  .mensaje-info { @apply border-enlace/30 bg-enlace-suave text-enlace; }
 }
