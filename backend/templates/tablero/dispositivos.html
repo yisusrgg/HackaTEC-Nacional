@@ -4,100 +4,129 @@
 {% block encabezado %}Dispositivos{% endblock %}
 
 {% block contenido %}
-{% for gw in gateways %}
-  <section class="tarjeta mb-6 p-5">
-    <div class="flex flex-wrap items-start justify-between gap-4">
-      <div>
-        <p class="text-sm text-slate-500">{{ gw.vehiculo }}</p>
-        <h2 class="flex flex-wrap items-center gap-2 text-lg font-semibold text-slate-900">
-          Gateway {{ gw.identificador }}
-          {% if not gw.activo %}<span class="etiqueta bg-rose-100 text-rose-700">Revocado</span>
-          {% elif gw.en_linea %}<span class="etiqueta bg-emerald-100 text-emerald-700">En línea</span>
-          {% else %}<span class="etiqueta bg-slate-100 text-slate-600">Sin contacto</span>{% endif %}
-        </h2>
-        <p class="mt-1 text-sm text-slate-500">
-          Último contacto: {{ gw.ultimo_contacto|naturaltime|default:"nunca" }} · último lote: {{ gw.ultimo_lote|default_if_none:"—" }} · firmware: {{ gw.firmware|default:"—" }}
-        </p>
-        <p class="text-xs text-slate-500">Clave actualizada: {{ gw.clave_actualizada|date:"d/m/Y H:i"|default:"—" }} · época {{ gw.epoca }}</p>
-      </div>
-      {% if puede_gestionar %}
-        <div class="flex gap-2">
-          <form method="post" action="{% url 'tablero:rotar_clave' 'gateway' gw.pk %}"
-                data-confirmar="Se generará una clave nueva para {{ gw.identificador }}. La anterior deja de servir y tendrás que provisionar el ESP32 otra vez. ¿Continuar?">
-            {% csrf_token %}<button type="submit" class="btn btn-secundario">Rotar clave</button>
-          </form>
-          <form method="post" action="{% url 'tablero:cambiar_estado' 'gateway' gw.pk %}"
-                data-confirmar="{% if gw.activo %}El gateway {{ gw.identificador }} dejará de poder enviar datos. ¿Revocarlo?{% else %}¿Reactivar el gateway {{ gw.identificador }}?{% endif %}">
-            {% csrf_token %}<button type="submit" class="btn {% if gw.activo %}btn-peligro{% else %}btn-primario{% endif %}">{% if gw.activo %}Revocar{% else %}Reactivar{% endif %}</button>
-          </form>
+<div class="pantalla">
+  <div class="pantalla-encabezado">
+    <div>
+      <p class="rotulo">Gateways y nodos de sensores</p>
+      <h2 class="titulo-pantalla">Dispositivos</h2>
+    </div>
+  </div>
+
+  {% for gw in gateways %}
+    <section class="panel">
+      <div class="panel-encabezado">
+        <div>
+          <p class="rotulo">{{ gw.vehiculo }}</p>
+          <div class="dispositivo-titulo">
+            <h3>Gateway <span class="mono">{{ gw.identificador }}</span></h3>
+            {% if not gw.activo %}<span class="etiqueta etiqueta-critico">Acceso revocado</span>
+            {% elif gw.en_linea %}<span class="etiqueta etiqueta-ok">En línea</span>
+            {% else %}<span class="etiqueta etiqueta-apagado">Sin contacto</span>{% endif %}
+          </div>
+          <p class="dispositivo-descripcion">ESP32 #2 · recibe las lecturas de sus nodos y las envía al servidor por HTTPS</p>
         </div>
-      {% endif %}
-    </div>
+        {% if puede_gestionar %}
+          <div class="acciones">
+            <form method="post" action="{% url 'tablero:rotar_clave' 'gateway' gw.pk %}"
+                  data-confirmar="Se generará una clave nueva para el gateway {{ gw.identificador }}. La clave actual deja de servir y tendrás que cargar la nueva en el ESP32 #2 por el monitor serie. ¿Continuar?">
+              {% csrf_token %}<button type="submit" class="btn btn-secundario btn-chico">Generar clave nueva</button>
+            </form>
+            <form method="post" action="{% url 'tablero:cambiar_estado' 'gateway' gw.pk %}"
+                  data-confirmar="{% if gw.activo %}El gateway {{ gw.identificador }} ya no podrá enviar datos y se rechazará todo lo que mande. ¿Revocar su acceso?{% else %}El gateway {{ gw.identificador }} podrá volver a enviar datos. ¿Restaurar su acceso?{% endif %}">
+              {% csrf_token %}<button type="submit" class="btn btn-chico {% if gw.activo %}btn-peligro-borde{% else %}btn-primario{% endif %}">{% if gw.activo %}Revocar acceso{% else %}Restaurar acceso{% endif %}</button>
+            </form>
+          </div>
+        {% endif %}
+      </div>
 
-    {% if gw.estado %}
-      <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-3 lg:grid-cols-6">
-        <div class="rounded-lg bg-slate-50 px-3 py-2"><dt class="text-xs text-slate-500">Wi-Fi</dt><dd class="font-medium">{{ gw.estado.rssi|default:"—" }} dBm</dd></div>
-        <div class="rounded-lg bg-slate-50 px-3 py-2"><dt class="text-xs text-slate-500">Estado CAN</dt><dd class="font-medium">{{ gw.estado.can_estado|default:"—" }}</dd></div>
-        <div class="rounded-lg bg-slate-50 px-3 py-2"><dt class="text-xs text-slate-500">Errores RX / TX</dt><dd class="font-medium">{{ gw.estado.can_err_rx|default_if_none:"—" }} / {{ gw.estado.can_err_tx|default_if_none:"—" }}</dd></div>
-        <div class="rounded-lg bg-slate-50 px-3 py-2"><dt class="text-xs text-slate-500">Errores de bus</dt><dd class="font-medium">{{ gw.estado.can_bus_err|default_if_none:"—" }}</dd></div>
-        <div class="rounded-lg bg-slate-50 px-3 py-2"><dt class="text-xs text-slate-500">Lotes en cola</dt><dd class="font-medium">{{ gw.estado.cola|default_if_none:"—" }}</dd></div>
-        <div class="rounded-lg bg-slate-50 px-3 py-2"><dt class="text-xs text-slate-500">Descartados</dt><dd class="font-medium">{{ gw.estado.descartados|default_if_none:"—" }}</dd></div>
+      <dl class="ficha">
+        <div>
+          <dt>Último contacto</dt>
+          <dd>{{ gw.ultimo_contacto|naturaltime|default:"nunca" }}<small>último envío recibido</small></dd>
+        </div>
+        <div>
+          <dt>Último lote</dt>
+          <dd>{{ gw.ultimo_lote|default_if_none:"—" }}<small>los paquetes van numerados para evitar repeticiones</small></dd>
+        </div>
+        <div>
+          <dt>Firmware</dt>
+          <dd class="mono">{{ gw.firmware|default:"—" }}<small>versión que reporta el equipo</small></dd>
+        </div>
+        <div>
+          <dt>Clave generada</dt>
+          <dd>{{ gw.clave_actualizada|date:"d/m/Y H:i"|default:"—" }}<small>época {{ gw.epoca }} · sube con cada clave nueva</small></dd>
+        </div>
+        {% if gw.estado %}
+          <div><dt>Wi-Fi</dt><dd>{{ gw.estado.rssi|default:"—" }} dBm<small>intensidad de la señal</small></dd></div>
+          <div><dt>Estado CAN</dt><dd>{{ gw.estado.can_estado|default:"—" }}<small>bus interno con los nodos</small></dd></div>
+          <div><dt>Errores RX / TX</dt><dd>{{ gw.estado.can_err_rx|default_if_none:"—" }} / {{ gw.estado.can_err_tx|default_if_none:"—" }}<small>al recibir / al enviar</small></dd></div>
+          <div><dt>Errores de bus</dt><dd>{{ gw.estado.can_bus_err|default_if_none:"—" }}</dd></div>
+          <div><dt>Lotes en cola</dt><dd>{{ gw.estado.cola|default_if_none:"—" }}<small>guardados sin red, por reenviar</small></dd></div>
+          <div><dt>Descartados</dt><dd>{{ gw.estado.descartados|default_if_none:"—" }}<small>la cola se llenó</small></dd></div>
+        {% endif %}
       </dl>
-    {% endif %}
 
-    <div class="mt-5 overflow-x-auto">
-      <table class="min-w-full divide-y divide-slate-200 text-sm">
-        <thead class="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-          <tr>
-            <th class="py-2 pr-4">Nodo</th>
-            <th class="py-2 pr-4">Estado</th>
-            <th class="py-2 pr-4">Contador</th>
-            <th class="py-2 pr-4">Recibidas</th>
-            <th class="py-2 pr-4">Pérdida</th>
-            <th class="py-2 pr-4">Rechazadas</th>
-            <th class="py-2 pr-4">Reinicios</th>
-            <th class="py-2 pr-4">Último contacto</th>
-            {% if puede_gestionar %}<th class="py-2"><span class="sr-only">Acciones</span></th>{% endif %}
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-          {% for n in gw.nodos.all %}
+      <div class="panel-subtitulo">
+        <p class="rotulo">Nodos de sensores de este gateway</p>
+        <p class="dispositivo-descripcion">ESP32 #1 · leen los sensores y firman cada lectura con su propia clave</p>
+      </div>
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <thead>
             <tr>
-              <td class="py-2 pr-4 font-medium text-slate-800">{{ n }}</td>
-              <td class="py-2 pr-4">
-                {% if not n.activo %}<span class="etiqueta bg-rose-100 text-rose-700">Revocado</span>
-                {% elif n.en_linea %}<span class="etiqueta bg-emerald-100 text-emerald-700">En línea</span>
-                {% else %}<span class="etiqueta bg-slate-100 text-slate-600">Sin datos</span>{% endif %}
-              </td>
-              <td class="py-2 pr-4 tabular-nums">{{ n.ultimo_contador|default_if_none:"—" }}</td>
-              <td class="py-2 pr-4 tabular-nums">{{ n.tramas_recibidas|intcomma }}</td>
-              <td class="py-2 pr-4 tabular-nums">{{ n.porcentaje_perdida }} %</td>
-              <td class="py-2 pr-4 tabular-nums">{{ n.tramas_rechazadas|intcomma }}</td>
-              <td class="py-2 pr-4 tabular-nums">{{ n.reinicios }}</td>
-              <td class="whitespace-nowrap py-2 pr-4 text-slate-500">{{ n.ultimo_contacto|naturaltime|default:"nunca" }}</td>
-              {% if puede_gestionar %}
-                <td class="py-2">
-                  <div class="flex gap-2">
-                    <form method="post" action="{% url 'tablero:rotar_clave' 'nodo' n.pk %}"
-                          data-confirmar="Se generará una clave nueva para {{ n }}. Tendrás que provisionar el ESP32 del nodo otra vez. ¿Continuar?">
-                      {% csrf_token %}<button type="submit" class="btn btn-secundario">Rotar clave</button>
-                    </form>
-                    <form method="post" action="{% url 'tablero:cambiar_estado' 'nodo' n.pk %}"
-                          data-confirmar="{% if n.activo %}Las tramas de {{ n }} se rechazarán. ¿Revocarlo?{% else %}¿Reactivar {{ n }}?{% endif %}">
-                      {% csrf_token %}<button type="submit" class="btn {% if n.activo %}btn-peligro{% else %}btn-primario{% endif %}">{% if n.activo %}Revocar{% else %}Reactivar{% endif %}</button>
-                    </form>
-                  </div>
-                </td>
-              {% endif %}
+              <th>Nodo</th>
+              <th>Estado</th>
+              <th class="numeros" title="Número de la última trama recibida; nunca debe repetirse">Contador</th>
+              <th class="numeros" title="Tramas aceptadas">Recibidas</th>
+              <th class="numeros" title="Tramas que no llegaron">Pérdida</th>
+              <th class="numeros" title="Tramas con firma inválida o repetidas">Rechazadas</th>
+              <th class="numeros" title="Veces que el nodo se reinició">Reinicios</th>
+              <th>Último contacto</th>
+              {% if puede_gestionar %}<th><span class="sr-only">Acciones</span></th>{% endif %}
             </tr>
-          {% empty %}
-            <tr><td colspan="9" class="py-4 text-center text-slate-500">Este gateway no tiene nodos.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {% for n in gw.nodos.all %}
+              <tr>
+                <td class="nombre-dispositivo">{{ n }}</td>
+                <td>
+                  {% if not n.activo %}<span class="etiqueta etiqueta-critico">Acceso revocado</span>
+                  {% elif n.en_linea %}<span class="etiqueta etiqueta-ok">En línea</span>
+                  {% else %}<span class="etiqueta etiqueta-apagado">Sin datos</span>{% endif %}
+                </td>
+                <td class="numeros">{{ n.ultimo_contador|default_if_none:"—" }}</td>
+                <td class="numeros">{{ n.tramas_recibidas|intcomma }}</td>
+                <td class="numeros">{{ n.porcentaje_perdida }} %</td>
+                <td class="numeros">{{ n.tramas_rechazadas|intcomma }}</td>
+                <td class="numeros">{{ n.reinicios }}</td>
+                <td class="secundario">{{ n.ultimo_contacto|naturaltime|default:"nunca" }}</td>
+                {% if puede_gestionar %}
+                  <td>
+                    <div class="acciones">
+                      <form method="post" action="{% url 'tablero:rotar_clave' 'nodo' n.pk %}"
+                            data-confirmar="Se generará una clave nueva para {{ n }}. La clave actual deja de servir y tendrás que cargar la nueva en el ESP32 #1 por el monitor serie. ¿Continuar?">
+                        {% csrf_token %}<button type="submit" class="btn btn-secundario btn-chico" aria-label="Generar clave nueva para {{ n }}">Generar clave nueva</button>
+                      </form>
+                      <form method="post" action="{% url 'tablero:cambiar_estado' 'nodo' n.pk %}"
+                            data-confirmar="{% if n.activo %}Se rechazarán todas las lecturas de {{ n }}. ¿Revocar su acceso?{% else %}{{ n }} podrá volver a enviar lecturas. ¿Restaurar su acceso?{% endif %}">
+                        {% csrf_token %}<button type="submit" class="btn btn-chico {% if n.activo %}btn-peligro-borde{% else %}btn-primario{% endif %}" aria-label="{% if n.activo %}Revocar acceso de{% else %}Restaurar acceso de{% endif %} {{ n }}">{% if n.activo %}Revocar acceso{% else %}Restaurar acceso{% endif %}</button>
+                      </form>
+                    </div>
+                  </td>
+                {% endif %}
+              </tr>
+            {% empty %}
+              <tr><td colspan="9" class="lista-vacia">Este gateway no tiene nodos.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% empty %}
+    <div class="panel vacio">
+      <h2>No hay dispositivos</h2>
+      <p>Ejecuta <code>python manage.py inicializar</code> para crear el gateway y el nodo de demostración.</p>
     </div>
-  </section>
-{% empty %}
-  <div class="tarjeta p-8 text-center text-slate-500">No hay dispositivos. Ejecuta <code>python manage.py inicializar</code>.</div>
-{% endfor %}
+  {% endfor %}
+</div>
 {% endblock %}

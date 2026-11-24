@@ -1,21 +1,29 @@
-// Tablero en tiempo real: consulta /api/v1/tablero/estado/ cada 2 s y actualiza las tarjetas.
+// Tablero en tiempo real: consulta /api/v1/tablero/estado/ cada 2 s y actualiza las lecturas.
 (() => {
   "use strict";
 
   const config = JSON.parse(document.getElementById("config-resumen").textContent);
 
-  // Las clases completas van escritas aquí para que Tailwind las incluya al compilar.
+  // Clase CSS de cada lectura según su nivel (definidas en estilos.css, sección 16).
   const CLASE_NIVEL = {
-    ok: "border-l-emerald-500",
-    alerta: "border-l-amber-500",
-    falla: "border-l-rose-500",
-    desactualizado: "border-l-slate-400",
-    sin_datos: "border-l-slate-300",
+    ok: "nivel-ok",
+    alerta: "nivel-alerta",
+    falla: "nivel-falla",
+    desactualizado: "nivel-desactualizado",
+    sin_datos: "nivel-sin-datos",
   };
   const CLASES_NIVEL = Object.values(CLASE_NIVEL);
-  const PASTILLA_EN_LINEA = ["bg-emerald-100", "text-emerald-700"];
-  const PASTILLA_FUERA = ["bg-rose-100", "text-rose-700"];
-  const PASTILLA_NEUTRA = ["bg-slate-100", "text-slate-600"];
+
+  // Estado de cada subsistema: se muestra el nivel más grave de sus lecturas.
+  const GRAVEDAD = ["sin_datos", "ok", "desactualizado", "alerta", "falla"];
+  const ESTADO_SUBSISTEMA = {
+    sin_datos: ["etiqueta-apagado", "Sin datos"],
+    ok: ["etiqueta-ok", "Normal"],
+    desactualizado: ["etiqueta-apagado", "Desactualizado"],
+    alerta: ["etiqueta-aviso", "Con alerta"],
+    falla: ["etiqueta-critico", "Falla de sensor"],
+  };
+  const CLASES_ETIQUETA = ["etiqueta-ok", "etiqueta-aviso", "etiqueta-critico", "etiqueta-apagado"];
 
   const porId = (id) => document.getElementById(id);
   const poner = (id, texto) => {
@@ -32,31 +40,48 @@
     return `hace ${Math.round(minutos / 60)} h`;
   }
 
-  function pastilla(id, enLinea, textoSi, textoNo) {
-    const elemento = porId(id);
+  function etiqueta(elemento, clase, texto) {
     if (!elemento) return;
-    elemento.classList.remove(...PASTILLA_EN_LINEA, ...PASTILLA_FUERA, ...PASTILLA_NEUTRA);
-    elemento.classList.add(...(enLinea ? PASTILLA_EN_LINEA : PASTILLA_FUERA));
-    elemento.textContent = enLinea ? textoSi : textoNo;
+    elemento.classList.remove(...CLASES_ETIQUETA);
+    elemento.classList.add(clase);
+    elemento.textContent = texto;
   }
 
   function pintarSenales(senales) {
     for (const senal of senales) {
-      const tarjeta = document.querySelector(`[data-senal="${CSS.escape(senal.codigo)}"]`);
-      if (!tarjeta) continue;
-      tarjeta.querySelector('[data-campo="texto"]').textContent = senal.texto;
-      tarjeta.querySelector('[data-campo="estado"]').textContent =
+      const lectura = document.querySelector(`[data-senal="${CSS.escape(senal.codigo)}"]`);
+      if (!lectura) continue;
+      lectura.querySelector('[data-campo="texto"]').textContent = senal.texto;
+      lectura.querySelector('[data-campo="estado"]').textContent =
         senal.nivel === "falla" ? `Sensor con falla · ${haceCuanto(senal.ts)}` : haceCuanto(senal.ts);
-      tarjeta.classList.remove(...CLASES_NIVEL);
-      tarjeta.classList.add(CLASE_NIVEL[senal.nivel] || CLASE_NIVEL.sin_datos);
+      lectura.classList.remove(...CLASES_NIVEL);
+      lectura.classList.add(CLASE_NIVEL[senal.nivel] || CLASE_NIVEL.sin_datos);
+      lectura.dataset.nivel = senal.nivel in CLASE_NIVEL ? senal.nivel : "sin_datos";
+    }
+
+    for (const seccion of document.querySelectorAll("[data-subsistema]")) {
+      let peor = "sin_datos";
+      for (const lectura of seccion.querySelectorAll("[data-senal]")) {
+        const nivel = lectura.dataset.nivel || "sin_datos";
+        if (GRAVEDAD.indexOf(nivel) > GRAVEDAD.indexOf(peor)) peor = nivel;
+      }
+      const [clase, texto] = ESTADO_SUBSISTEMA[peor];
+      etiqueta(seccion.querySelector("[data-estado-subsistema]"), clase, texto);
     }
   }
 
   function pintarSistema(datos) {
     const gateway = datos.gateway;
     if (gateway) {
-      const sinContacto = gateway.ultimo_contacto ? `Sin contacto · ${haceCuanto(gateway.ultimo_contacto)}` : "Sin contacto";
-      pastilla("gw-pastilla", gateway.en_linea, "En línea", gateway.activo ? sinContacto : "Revocado");
+      const pastilla = porId("gw-pastilla");
+      if (gateway.en_linea) {
+        etiqueta(pastilla, "etiqueta-ok", "En línea");
+      } else if (!gateway.activo) {
+        etiqueta(pastilla, "etiqueta-critico", "Revocado");
+      } else {
+        const texto = gateway.ultimo_contacto ? `Sin contacto · ${haceCuanto(gateway.ultimo_contacto)}` : "Sin contacto";
+        etiqueta(pastilla, "etiqueta-critico", texto);
+      }
       const estado = gateway.estado || {};
       poner("gw-rssi", estado.rssi !== undefined ? `${estado.rssi} dBm` : "—");
       poner("gw-cola", estado.cola !== undefined ? `${estado.cola} lotes` : "—");
@@ -66,12 +91,13 @@
     }
     const nodo = datos.nodo;
     if (nodo) {
-      poner("nodo-perdida", `${nodo.porcentaje_perdida.toFixed(2)} % pérdida`);
+      poner("nodo-perdida", nodo.porcentaje_perdida.toFixed(2));
       poner("nodo-recibidas", nodo.recibidas.toLocaleString("es-MX"));
       poner("nodo-rechazadas", nodo.rechazadas.toLocaleString("es-MX"));
       poner("nodo-reinicios", String(nodo.reinicios));
     }
     poner("alertas-activas", String(datos.alertas_activas));
+    porId("alertas-activas")?.classList.toggle("cifra-critico", datos.alertas_activas > 0);
     poner("eventos-criticos", String(datos.eventos_criticos_24h));
   }
 
@@ -87,9 +113,11 @@
       pintarSenales(datos.senales);
       pintarSistema(datos);
       poner("ultima-actualizacion", new Date().toLocaleTimeString("es-MX"));
-      porId("aviso-conexion")?.classList.add("hidden");
+      const aviso = porId("aviso-conexion");
+      if (aviso) aviso.hidden = true;
     } catch (error) {
-      porId("aviso-conexion")?.classList.remove("hidden");
+      const aviso = porId("aviso-conexion");
+      if (aviso) aviso.hidden = false;
     }
   }
 

@@ -3,35 +3,42 @@
 {% block encabezado %}Clave nueva · {{ dispositivo }}{% endblock %}
 
 {% block contenido %}
-<div class="mx-auto max-w-3xl space-y-6">
-  <div class="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-amber-900">
-    <p class="font-semibold">Esta clave se muestra una sola vez.</p>
-    <p class="mt-1 text-sm">Cópiala ahora al ESP32 por el monitor serie. Si recargas o sales de esta página ya no se puede volver a ver: habría que rotarla otra vez.</p>
+<div class="pantalla angosto">
+  <div>
+    <p class="rotulo">Provisionar dispositivo</p>
+    <h2 class="titulo-pantalla">Clave nueva para {{ dispositivo }}</h2>
   </div>
 
-  <div class="tarjeta p-5">
-    <p class="text-sm font-medium text-slate-500">Comando para el monitor serie (115200 baudios)</p>
-    <div class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center">
-      <code id="comando-clave" class="block flex-1 break-all rounded-lg bg-slate-900 px-4 py-3 font-mono text-sm text-emerald-300">clave {{ clave_hex }}</code>
+  <div class="mensaje mensaje-aviso">
+    <p class="mensaje-titulo">Esta clave se muestra una sola vez.</p>
+    <p>Cópiala ahora al ESP32 por el monitor serie. Si recargas o sales de esta página ya no se puede volver a ver: habría que rotarla otra vez.</p>
+  </div>
+
+  <section class="panel">
+    <div class="panel-encabezado"><h3>Comando para el monitor serie</h3><span class="contador">115200 baudios</span></div>
+    <div class="panel-cuerpo comando">
+      <code id="comando-clave">clave {{ clave_hex }}</code>
       <button type="button" class="btn btn-secundario" data-copiar="#comando-clave">Copiar</button>
     </div>
-  </div>
+  </section>
 
-  <div class="tarjeta p-5 text-sm text-slate-700">
-    <p class="font-semibold text-slate-900">Pasos</p>
-    <ol class="mt-2 list-decimal space-y-1 pl-5">
-      {% if tipo == "nodo" %}
-        <li>Conecta el <strong>ESP32 #1 (nodo de sensores)</strong> por USB y abre el monitor serie a 115200 baudios.</li>
-        <li>Pega el comando de arriba y presiona Enter.</li>
-        <li>El nodo guarda la clave, reinicia su contador de tramas y se reinicia solo.</li>
-      {% else %}
-        <li>Conecta el <strong>ESP32 #2 (gateway)</strong> por USB y abre el monitor serie a 115200 baudios.</li>
-        <li>Confirma el identificador con <code>id {{ dispositivo.identificador }}</code>.</li>
-        <li>Pega el comando de arriba y presiona Enter. El gateway reinicia su numeración de lotes, vacía su cola y se reinicia solo.</li>
-      {% endif %}
-    </ol>
-  </div>
+  <section class="panel">
+    <div class="panel-encabezado"><h3>Pasos</h3></div>
+    <div class="panel-cuerpo">
+      <ol class="pasos">
+        {% if tipo == "nodo" %}
+          <li>Conecta el <strong>ESP32 #1 (nodo de sensores)</strong> por USB y abre el monitor serie a 115200 baudios.</li>
+          <li>Pega el comando de arriba y presiona Enter.</li>
+          <li>El nodo guarda la clave, reinicia su contador de tramas y se reinicia solo.</li>
+        {% else %}
+          <li>Conecta el <strong>ESP32 #2 (gateway)</strong> por USB y abre el monitor serie a 115200 baudios.</li>
+          <li>Confirma el identificador con <code>id {{ dispositivo.identificador }}</code>.</li>
+          <li>Pega el comando de arriba y presiona Enter. El gateway reinicia su numeración de lotes, vacía su cola y se reinicia solo.</li>
+        {% endif %}
+      </ol>
+    </div>
+  </section>
 
-  <a href="{% url 'tablero:dispositivos' %}" class="btn btn-primario">Listo, volver a dispositivos</a>
+  <div><a href="{% url 'tablero:dispositivos' %}" class="btn btn-primario">Listo, volver a dispositivos</a></div>
 </div>
 {% endblock %}

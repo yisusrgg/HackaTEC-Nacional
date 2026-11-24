@@ -4,50 +4,70 @@
 {% block encabezado %}Bitácora de seguridad{% endblock %}
 
 {% block contenido %}
-<div class="mb-6 rounded-xl border px-5 py-4 {% if verificacion.integra %}border-emerald-200 bg-emerald-50 text-emerald-900{% else %}border-rose-200 bg-rose-50 text-rose-900{% endif %}">
-  {% if verificacion.integra %}
-    <p class="font-semibold">Bitácora íntegra</p>
-    <p class="mt-1 text-sm">Se verificaron {{ verificacion.revisados }} eventos encadenados con SHA-256: ninguno fue alterado ni eliminado.</p>
-  {% else %}
-    <p class="font-semibold">¡La bitácora fue alterada!</p>
-    <p class="mt-1 text-sm">{{ verificacion.motivo }}{% if verificacion.evento_id %} (evento #{{ verificacion.evento_id }}){% endif %}. Revisa quién tuvo acceso a la base de datos.</p>
-  {% endif %}
-</div>
+<div class="pantalla">
+  <div class="pantalla-encabezado">
+    <div>
+      <p class="rotulo">Registro de solo agregar · encadenado con SHA-256</p>
+      <h2 class="titulo-pantalla">Bitácora de seguridad</h2>
+    </div>
+    <div class="pantalla-acciones">
+      <span class="contador">{{ page_obj.paginator.count }} eventos</span>
+      <nav class="segmentado" aria-label="Filtrar por severidad">
+        <a href="?"{% if not severidad %} class="activo" aria-current="page"{% endif %}>Todos</a>
+        {% for valor, etiqueta in severidades %}
+          <a href="?severidad={{ valor }}"{% if severidad == valor %} class="activo" aria-current="page"{% endif %}>{{ etiqueta }}</a>
+        {% endfor %}
+      </nav>
+    </div>
+  </div>
 
-<div class="mb-4 flex flex-wrap gap-2">
-  <a href="?" class="btn {% if not severidad %}btn-primario{% else %}btn-secundario{% endif %}">Todos</a>
-  {% for valor, etiqueta in severidades %}
-    <a href="?severidad={{ valor }}" class="btn {% if severidad == valor %}btn-primario{% else %}btn-secundario{% endif %}">{{ etiqueta }}</a>
-  {% endfor %}
-</div>
+  <div class="cadena{% if not verificacion.integra %} cadena-alterada{% endif %}" role="status">
+    <span class="cadena-icono" aria-hidden="true">{% if verificacion.integra %}✓{% else %}!{% endif %}</span>
+    <div class="cadena-texto">
+      {% if verificacion.integra %}
+        <p class="mensaje-titulo">Bitácora íntegra</p>
+        <p class="secundario">Se verificaron {{ verificacion.revisados }} eventos encadenados con SHA-256: ninguno fue alterado ni eliminado.</p>
+      {% else %}
+        <p class="mensaje-titulo">La bitácora fue alterada</p>
+        <p class="secundario">{{ verificacion.motivo }}{% if verificacion.evento_id %} (evento #{{ verificacion.evento_id }}){% endif %}. Revisa quién tuvo acceso a la base de datos.</p>
+      {% endif %}
+    </div>
+    <a href="{{ request.get_full_path }}" class="btn btn-secundario btn-chico">Verificar de nuevo</a>
+  </div>
 
-<div class="tarjeta overflow-x-auto">
-  <table class="min-w-full divide-y divide-slate-200 text-sm">
-    <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-      <tr>
-        <th class="px-4 py-3">Fecha</th>
-        <th class="px-4 py-3">Evento</th>
-        <th class="px-4 py-3">Severidad</th>
-        <th class="px-4 py-3">Actor</th>
-        <th class="px-4 py-3">IP</th>
-        <th class="px-4 py-3">Detalle</th>
-      </tr>
-    </thead>
-    <tbody class="divide-y divide-slate-100">
-      {% for e in eventos %}
-        <tr class="align-top">
-          <td class="whitespace-nowrap px-4 py-3 tabular-nums text-slate-500">{{ e.creado|date:"d/m/Y H:i:s" }}</td>
-          <td class="px-4 py-3 font-medium text-slate-800">{{ e.get_tipo_display }}</td>
-          <td class="px-4 py-3">{% include "tablero/_severidad.html" with severidad=e.severidad %}</td>
-          <td class="px-4 py-3 text-slate-700">{{ e.actor|default:"—" }}</td>
-          <td class="whitespace-nowrap px-4 py-3 text-slate-500">{{ e.ip|default:"—" }}</td>
-          <td class="px-4 py-3"><code class="break-all text-xs text-slate-600">{{ e.detalle|json_compacto }}</code></td>
-        </tr>
-      {% empty %}
-        <tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">Sin eventos.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="panel">
+    <div class="tabla-contenedor">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Evento</th>
+            <th>Severidad</th>
+            <th>Actor</th>
+            <th>IP</th>
+            <th>Detalle</th>
+            <th>Huella</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in eventos %}
+            <tr>
+              <td class="fecha">{{ e.creado|date:"d/m/Y H:i:s" }}</td>
+              <td class="evento-tipo">{{ e.get_tipo_display }}<small>{{ e.tipo }}</small></td>
+              <td>{% include "tablero/_severidad.html" with severidad=e.severidad %}</td>
+              <td>{{ e.actor|default:"—" }}</td>
+              <td class="mono">{{ e.ip|default:"—" }}</td>
+              <td class="detalle"><code>{{ e.detalle|json_compacto }}</code></td>
+              <td class="huella" title="{{ e.hash }}">{{ e.hash|slice:":10" }}…</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7" class="lista-vacia">Sin eventos.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% include "tablero/_paginacion.html" %}
 </div>
-{% include "tablero/_paginacion.html" %}
 {% endblock %}

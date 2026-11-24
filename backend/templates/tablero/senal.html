@@ -4,45 +4,55 @@
 {% block encabezado %}{{ senal.nombre }}{% endblock %}
 
 {% block contenido %}
-<div class="mb-6 flex flex-wrap items-end justify-between gap-3">
-  <div>
-    <a href="{% url 'tablero:resumen' %}{% if nodo %}?nodo={{ nodo.numero }}{% endif %}" class="text-sm font-medium text-blue-700 hover:underline">← Resumen</a>
-    <p class="mt-1 text-sm text-slate-500">{{ senal.get_subsistema_display }} · <code>{{ senal.codigo }}</code>{% if nodo %} · {{ nodo }}{% endif %}</p>
+<div class="pantalla">
+  <div class="pantalla-encabezado">
+    <div>
+      <a href="{% url 'tablero:resumen' %}{% if nodo %}?nodo={{ nodo.numero }}{% endif %}" class="enlace-discreto">← Volver al resumen</a>
+      <p class="rotulo espacio-arriba">{{ senal.get_subsistema_display }}{% if nodo %} · {{ nodo }}{% endif %}</p>
+      <h2 class="titulo-pantalla">{{ senal.nombre }} <small class="mono">{{ senal.codigo }}</small></h2>
+    </div>
+    <div class="pantalla-acciones">
+      <div class="segmentado" role="group" aria-label="Periodo de la gráfica">
+        {% for minutos, etiqueta in rangos %}
+          <button type="button" data-minutos="{{ minutos }}" aria-pressed="false">{{ etiqueta }}</button>
+        {% endfor %}
+      </div>
+      {% if perms.telemetria.exportar_datos and nodo %}
+        <a id="enlace-exportar" class="btn btn-secundario btn-chico" href="{% url 'tablero:exportar' %}?senal={{ senal.codigo }}&amp;nodo={{ nodo.numero }}&amp;minutos=60">Exportar CSV</a>
+      {% endif %}
+    </div>
   </div>
-  <div class="flex flex-wrap items-center gap-2">
-    {% for minutos, etiqueta in rangos %}
-      <button type="button" class="btn btn-secundario" data-minutos="{{ minutos }}">{{ etiqueta }}</button>
-    {% endfor %}
-    {% if perms.telemetria.exportar_datos and nodo %}
-      <a id="enlace-exportar" class="btn btn-primario" href="{% url 'tablero:exportar' %}?senal={{ senal.codigo }}&amp;nodo={{ nodo.numero }}&amp;minutos=60">Exportar CSV</a>
-    {% endif %}
+
+  <section class="panel">
+    <div class="panel-cuerpo">
+      <div id="aviso-grafica" class="mensaje mensaje-aviso espacio-abajo" hidden></div>
+      <div class="grafica">
+        <canvas id="grafica" role="img" aria-label="Gráfica de {{ senal.nombre }}"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <div class="indicadores indicadores-5">
+    <div class="indicador"><p class="rotulo">Último</p><p class="cifra" id="est-ultimo">—</p></div>
+    <div class="indicador"><p class="rotulo">Mínimo</p><p class="cifra" id="est-min">—</p></div>
+    <div class="indicador"><p class="rotulo">Máximo</p><p class="cifra" id="est-max">—</p></div>
+    <div class="indicador"><p class="rotulo" id="est-prom-etiqueta">Promedio</p><p class="cifra" id="est-prom">—</p></div>
+    <div class="indicador"><p class="rotulo">Lecturas</p><p class="cifra" id="est-n">—</p></div>
   </div>
-</div>
 
-<div class="tarjeta p-4">
-  <div id="aviso-grafica" class="mb-3 hidden rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800"></div>
-  <div class="relative h-80">
-    <canvas id="grafica" role="img" aria-label="Gráfica de {{ senal.nombre }}"></canvas>
-  </div>
-</div>
-
-<div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-  <div class="tarjeta p-4"><p class="text-sm text-slate-500">Último</p><p class="mt-1 text-2xl font-semibold tabular-nums text-slate-900" id="est-ultimo">—</p></div>
-  <div class="tarjeta p-4"><p class="text-sm text-slate-500">Mínimo</p><p class="mt-1 text-2xl font-semibold tabular-nums text-slate-900" id="est-min">—</p></div>
-  <div class="tarjeta p-4"><p class="text-sm text-slate-500">Máximo</p><p class="mt-1 text-2xl font-semibold tabular-nums text-slate-900" id="est-max">—</p></div>
-  <div class="tarjeta p-4"><p class="text-sm text-slate-500" id="est-prom-etiqueta">Promedio</p><p class="mt-1 text-2xl font-semibold tabular-nums text-slate-900" id="est-prom">—</p></div>
-  <div class="tarjeta p-4"><p class="text-sm text-slate-500">Lecturas</p><p class="mt-1 text-2xl font-semibold tabular-nums text-slate-900" id="est-n">—</p></div>
-</div>
-
-<div class="tarjeta mt-4 flex flex-wrap items-center justify-between gap-3 p-4 text-sm text-slate-600">
-  <p>
-    Umbral bajo: <strong>{{ senal.umbral_bajo|default_if_none:"—" }}</strong> ·
-    umbral alto: <strong>{{ senal.umbral_alto|default_if_none:"—" }}</strong> {{ senal.unidad }} ·
-    rango físico válido: {{ senal.rango_min|default_if_none:"—" }} a {{ senal.rango_max|default_if_none:"—" }} {{ senal.unidad }}
-  </p>
-  {% if perms.telemetria.change_senal %}
-    <a href="{% url 'admin:telemetria_senal_change' senal.pk %}" class="font-medium text-blue-700 hover:underline">Editar umbrales</a>
-  {% endif %}
+  <section class="panel">
+    <div class="panel-encabezado">
+      <h3>Límites de alerta</h3>
+      {% if perms.telemetria.change_senal %}
+        <a href="{% url 'admin:telemetria_senal_change' senal.pk %}" class="enlace-discreto">Editar umbrales</a>
+      {% endif %}
+    </div>
+    <dl class="ficha ficha-sin-borde">
+      <div><dt>Umbral bajo</dt><dd>{% if senal.umbral_bajo is not None %}{{ senal.umbral_bajo }} {{ senal.unidad }}{% else %}Sin umbral{% endif %}<small>alerta si el valor baja de aquí</small></dd></div>
+      <div><dt>Umbral alto</dt><dd>{% if senal.umbral_alto is not None %}{{ senal.umbral_alto }} {{ senal.unidad }}{% else %}Sin umbral{% endif %}<small>alerta si el valor sube de aquí</small></dd></div>
+      <div><dt>Rango físico válido</dt><dd>{{ senal.rango_min|default_if_none:"—" }} a {{ senal.rango_max|default_if_none:"—" }} {{ senal.unidad }}<small>fuera de él la lectura se marca como sospechosa</small></dd></div>
+    </dl>
+  </section>
 </div>
 
 {{ config|json_script:"config-senal" }}
