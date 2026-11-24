@@ -67,6 +67,7 @@ class OrdenServicio(models.Model):
         permissions = [
             ("gestionar_ordenes", "Puede crear y avanzar órdenes de servicio"),
             ("validar_ordenes", "Puede validar, cerrar y cancelar órdenes de servicio"),
+            ("ver_analisis", "Puede ver el análisis de calidad"),
         ]
 
     def __str__(self):

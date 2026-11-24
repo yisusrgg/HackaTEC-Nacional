@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% load static %}
+{% block titulo %}Análisis de calidad{% endblock %}
+{% block encabezado %}Análisis de calidad{% endblock %}
+
+{% block contenido %}
+<div class="pantalla">
+  <div class="pantalla-encabezado">
+    <div>
+      <p class="rotulo">Ingeniería de producto, calidad y postventa</p>
+      <h2 class="titulo-pantalla">Análisis de calidad</h2>
+      <p class="introduccion">Qué falla más, en qué unidades, cuánto tarda la reparación y qué tan confiables son los datos de cada sensor. Del {{ datos.desde|date:"d/m/Y" }} al {{ datos.hasta|date:"d/m/Y" }}.</p>
+    </div>
+  </div>
+
+  <form method="get" class="filtros" aria-label="Filtros del análisis">
+    <div class="campo-grupo">
+      <label for="filtro-dias">Periodo</label>
+      <select id="filtro-dias" name="dias" class="campo" data-autoenviar>
+        {% for valor, etiqueta in periodos %}<option value="{{ valor }}"{% if valor == dias %} selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="campo-grupo">
+      <label for="filtro-vehiculo">Unidad</label>
+      <select id="filtro-vehiculo" name="vehiculo" class="campo" data-autoenviar>
+        <option value="">Todas las unidades</option>
+        {% for v in vehiculos %}<option value="{{ v.pk }}"{% if vehiculo and v.pk == vehiculo.pk %} selected{% endif %}>{{ v }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="campo-grupo">
+      <label for="filtro-subsistema">Subsistema</label>
+      <select id="filtro-subsistema" name="subsistema" class="campo" data-autoenviar>
+        <option value="">Todos los subsistemas</option>
+        {% for valor, etiqueta in subsistemas %}<option value="{{ valor }}"{% if valor == subsistema %} selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+      </select>
+    </div>
+    <noscript><button type="submit" class="btn btn-secundario btn-chico">Aplicar</button></noscript>
+  </form>
+
+  <div class="indicadores">
+    <div class="indicador">
+      <p class="rotulo">Fallas detectadas</p>
+      <p class="cifra">{{ datos.total_fallas }}</p>
+      <p class="indicador-detalle">{{ datos.criticas }} críticas</p>
+    </div>
+    <div class="indicador">
+      <p class="rotulo">Tiempo medio de atención</p>
+      <p class="cifra">{{ datos.tiempo_atencion }}</p>
+      <p class="indicador-detalle">de la alerta a que alguien la atiende</p>
+    </div>
+    <div class="indicador">
+      <p class="rotulo">Tiempo medio de reparación</p>
+      <p class="cifra">{{ datos.tiempo_reparacion }}</p>
+      <p class="indicador-detalle">de abrir la orden a cerrarla · {{ datos.total_cerradas }} cerradas</p>
+    </div>
+    <div class="indicador">
+      <p class="rotulo">Reparadas a la primera</p>
+      <p class="cifra">{% if datos.a_la_primera is None %}—{% else %}{{ datos.a_la_primera }}<small> %</small>{% endif %}</p>
+      <p class="indicador-detalle">{% if datos.reincidencias %}la falla volvió {{ datos.reincidencias }} {% if datos.reincidencias == 1 %}vez{% else %}veces{% endif %}{% else %}sin reincidencias{% endif %}</p>
+    </div>
+  </div>
+
+  <div class="dos-columnas">
+    <section class="panel">
+      <div class="panel-encabezado"><h3>Fallas por día</h3><span class="contador">{{ datos.total_fallas }} en {{ dias }} días</span></div>
+      <div class="panel-cuerpo">
+        <div class="grafica grafica-chica"><canvas id="grafica-tendencia" role="img" aria-label="Número de fallas por día"></canvas></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-encabezado"><h3>Hallazgos</h3></div>
+      <ul class="hallazgos">
+        {% for frase in datos.hallazgos %}<li>{{ frase }}</li>{% empty %}<li class="secundario">Sin hallazgos en este periodo.</li>{% endfor %}
+      </ul>
+    </section>
+  </div>
+
+  <div class="dos-columnas">
+    <section class="panel">
+      <div class="panel-encabezado"><h3>Fallas por señal</h3><span class="contador">las que más se repiten</span></div>
+      {% if datos.pareto %}
+        <ol class="barras">
+          {% for p in datos.pareto %}
+            <li>
+              <span class="barras-nombre">{{ p.nombre }}<small>{{ p.subsistema }}</small></span>
+              <progress class="barra" value="{{ p.n }}" max="{{ datos.pareto.0.n }}" aria-label="{{ p.n }} fallas"></progress>
+              <span class="barras-valor">{{ p.n }}<small>{{ p.porcentaje }} % · acum. {{ p.acumulado }} %</small></span>
+            </li>
+          {% endfor %}
+        </ol>
+      {% else %}
+        <p class="lista-vacia">Sin fallas en el periodo.</p>
+      {% endif %}
+    </section>
+
+    <section class="panel">
+      <div class="panel-encabezado"><h3>Fallas por subsistema</h3></div>
+      {% if datos.por_subsistema %}
+        <ol class="barras barras-compactas">
+          {% for s in datos.por_subsistema %}
+            <li>
+              <span class="barras-nombre">{{ s.nombre }}</span>
+              <progress class="barra" value="{{ s.n }}" max="{{ datos.total_fallas }}" aria-label="{{ s.porcentaje }} %"></progress>
+              <span class="barras-valor">{{ s.n }}<small>{{ s.porcentaje }} %</small></span>
+            </li>
+          {% endfor %}
+        </ol>
+      {% else %}
+        <p class="lista-vacia">Sin fallas en el periodo.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="panel-encabezado"><h3>Por unidad</h3><span class="contador">fallas y reparaciones de cada autobús</span></div>
+    <div class="tabla-contenedor">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Unidad</th>
+            <th class="numeros">Fallas</th>
+            <th class="numeros">Críticas</th>
+            <th class="numeros">Órdenes</th>
+            <th class="numeros" title="Órdenes cerradas sin que la falla volviera">Reparadas a la primera</th>
+            <th class="numeros" title="Veces que la falla volvió después de una reparación">Reincidencias</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in datos.por_unidad %}
+            <tr>
+              <td><b class="nombre-dispositivo">{{ u.identificador }}</b> <span class="secundario">{{ u.nombre }}</span></td>
+              <td class="numeros">{{ u.fallas }}</td>
+              <td class="numeros">{{ u.criticas }}</td>
+              <td class="numeros">{{ u.ordenes }}</td>
+              <td class="numeros">{{ u.a_la_primera }}</td>
+              <td class="numeros">{% if u.reincidencias %}<span class="texto-aviso">{{ u.reincidencias }}</span>{% else %}0{% endif %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="lista-vacia">Sin fallas ni órdenes en el periodo.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-encabezado">
+      <h3>Calidad de los datos por sensor</h3>
+      <span class="contador">se marca en ámbar si menos del {{ datos.calidad_minima }} % de las lecturas son válidas</span>
+    </div>
+    <div class="tabla-contenedor">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Señal</th>
+            <th>Subsistema</th>
+            <th class="numeros">Lecturas</th>
+            <th>Válidas</th>
+            <th class="numeros" title="El sensor no respondió">Sin dato</th>
+            <th class="numeros" title="Valor fuera del rango físico posible">Fuera de rango</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in datos.calidad %}
+            <tr>
+              <td>{{ c.nombre }}</td>
+              <td class="secundario">{{ c.subsistema }}</td>
+              <td class="numeros">{{ c.total }}</td>
+              <td>{% if c.validas >= datos.calidad_minima %}<span class="etiqueta etiqueta-ok">{{ c.validas }} %</span>{% elif c.validas >= 80 %}<span class="etiqueta etiqueta-aviso">{{ c.validas }} %</span>{% else %}<span class="etiqueta etiqueta-critico">{{ c.validas }} %</span>{% endif %}</td>
+              <td class="numeros">{{ c.sin_dato }} %</td>
+              <td class="numeros">{{ c.fuera }} %</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="lista-vacia">Sin lecturas en el periodo.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{{ grafica|json_script:"datos-analisis" }}
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'vendor/chart.umd.js' %}"></script>
+<script src="{% static 'js/analisis.js' %}"></script>
+{% endblock %}

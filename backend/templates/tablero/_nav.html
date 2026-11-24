@@ -15,6 +15,10 @@
       Órdenes de servicio
     </a>
 {% endif %}
+{% if perms.servicio.ver_analisis %}
+  <p class="menu-grupo">Análisis</p>
+  <a href="{% url 'tablero:analisis' %}" class="menu-enlace{% if actual == 'analisis' %} activo{% endif %}"{% if actual == 'analisis' %} aria-current="page"{% endif %}>Análisis de calidad</a>
+{% endif %}
 {% if perms.auditoria.ver_auditoria or user.is_staff %}
   <p class="menu-grupo">Seguridad y sistema</p>
 {% endif %}

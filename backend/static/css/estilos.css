@@ -612,3 +612,32 @@ textarea.campo { resize: vertical; }
   .orden-fila { grid-template-columns: 1fr; gap: 10px; }
   .orden-avance { justify-items: start; text-align: left; }
 }
+
+
+
+/* ---------- 23. Análisis de calidad ---------- */
+.filtros { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 16px; margin: 0; }
+.filtros .campo-grupo { min-width: 200px; }
+.filtros .campo { width: 100%; }
+
+.hallazgos { margin: 0; padding: 4px 20px 16px 38px; display: grid; gap: 10px; font-size: 14px; }
+.hallazgos li::marker { color: var(--gris-claro); }
+
+/* Barras horizontales hechas con <progress> (la CSP no permite anchos escritos en el HTML) */
+.barras { list-style: none; margin: 0; padding: 8px 20px 16px; display: grid; gap: 12px; }
+.barras li { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 150px; gap: 12px; align-items: center; font-size: 14px; }
+.barras-nombre { min-width: 0; }
+.barras-nombre small, .barras-valor small { display: block; font-size: 12px; color: var(--gris); }
+.barras-valor { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+.barras-valor small { font-weight: 400; white-space: nowrap; }
+.barra { appearance: none; display: block; width: 100%; height: 10px; border: 0; border-radius: 2px; background: var(--bruma); overflow: hidden; color: var(--tinta); }
+.barra::-webkit-progress-bar { background: var(--bruma); }
+.barra::-webkit-progress-value { background: var(--tinta); }
+.barra::-moz-progress-bar { background: var(--tinta); }
+.texto-aviso { color: var(--aviso); font-weight: 600; }
+
+@media (max-width: 600px) {
+  .barras li { grid-template-columns: 1fr 130px; }
+  .barras .barra { grid-column: 1 / -1; grid-row: 2; }
+  .filtros .campo-grupo { min-width: 100%; }
+}
