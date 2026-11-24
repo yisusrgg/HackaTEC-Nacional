@@ -1,0 +1,12 @@
+# Núcleo
+Django>=5.2.8,<6.0
+djangorestframework>=3.16,<3.17
+cryptography>=42
+python-dotenv>=1.0
+argon2-cffi>=23.1
+whitenoise>=6.7
+tzdata>=2024.1
+# Servidor con HTTPS para la demo
+uvicorn>=0.30
+# Opcional: PostgreSQL (descomenta si usas DB_MOTOR=postgres)
+# psycopg[binary]>=3.2

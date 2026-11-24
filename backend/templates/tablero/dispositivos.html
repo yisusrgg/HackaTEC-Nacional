@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block titulo %}Dispositivos{% endblock %}
+{% block encabezado %}Dispositivos{% endblock %}
+
+{% block contenido %}
+{% for gw in gateways %}
+  <section class="tarjeta mb-6 p-5">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <p class="text-sm text-slate-500">{{ gw.vehiculo }}</p>
+        <h2 class="flex flex-wrap items-center gap-2 text-lg font-semibold text-slate-900">
+          Gateway {{ gw.identificador }}
+          {% if not gw.activo %}<span class="etiqueta bg-rose-100 text-rose-700">Revocado</span>
+          {% elif gw.en_linea %}<span class="etiqueta bg-emerald-100 text-emerald-700">En línea</span>
+          {% else %}<span class="etiqueta bg-slate-100 text-slate-600">Sin contacto</span>{% endif %}
+        </h2>
+        <p class="mt-1 text-sm text-slate-500">
+          Último contacto: {{ gw.ultimo_contacto|naturaltime|default:"nunca" }} · último lote: {{ gw.ultimo_lote|default_if_none:"—" }} · firmware: {{ gw.firmware|default:"—" }}
+        </p>
+        <p class="text-xs text-slate-500">Clave actualizada: {{ gw.clave_actualizada|date:"d/m/Y H:i"|default:"—" }} · época {{ gw.epoca }}</p>
+      </div>
+      {% if puede_gestionar %}
+        <div class="flex gap-2">
+          <form method="post" action="{% url 'tablero:rotar_clave' 'gateway' gw.pk %}"
+                data-confirmar="Se generará una clave nueva para {{ gw.identificador }}. La anterior deja de servir y tendrás que provisionar el ESP32 otra vez. ¿Continuar?">
+            {% csrf_token %}<button type="submit" class="btn btn-secundario">Rotar clave</button>
+          </form>
+          <form method="post" action="{% url 'tablero:cambiar_estado' 'gateway' gw.pk %}"
+                data-confirmar="{% if gw.activo %}El gateway {{ gw.identificador }} dejará de poder enviar datos. ¿Revocarlo?{% else %}¿Reactivar el gateway {{ gw.identificador }}?{% endif %}">
+            {% csrf_token %}<button type="submit" class="btn {% if gw.activo %}btn-peligro{% else %}btn-primario{% endif %}">{% if gw.activo %}Revocar{% else %}Reactivar{% endif %}</button>
+          </form>
+        </div>
+      {% endif %}
+    </div>
+
+    {% if gw.estado %}
+      <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-3 lg:grid-cols-6">
+        <div class="rounded-lg bg-slate-50 px-3 py-2"><dt class="text-xs text-slate-500">Wi-Fi</dt><dd class="font-medium">{{ gw.estado.rssi|default:"—" }} dBm</dd></div>
+        <div class="rounded-lg bg-slate-50 px-3 py-2"><dt class="text-xs text-slate-500">Estado CAN</dt><dd class="font-medium">{{ gw.estado.can_estado|default:"—" }}</dd></div>
+        <div class="rounded-lg bg-slate-50 px-3 py-2"><dt class="text-xs text-slate-500">Errores RX / TX</dt><dd class="font-medium">{{ gw.estado.can_err_rx|default_if_none:"—" }} / {{ gw.estado.can_err_tx|default_if_none:"—" }}</dd></div>
+        <div class="rounded-lg bg-slate-50 px-3 py-2"><dt class="text-xs text-slate-500">Errores de bus</dt><dd class="font-medium">{{ gw.estado.can_bus_err|default_if_none:"—" }}</dd></div>
+        <div class="rounded-lg bg-slate-50 px-3 py-2"><dt class="text-xs text-slate-500">Lotes en cola</dt><dd class="font-medium">{{ gw.estado.cola|default_if_none:"—" }}</dd></div>
+        <div class="rounded-lg bg-slate-50 px-3 py-2"><dt class="text-xs text-slate-500">Descartados</dt><dd class="font-medium">{{ gw.estado.descartados|default_if_none:"—" }}</dd></div>
+      </dl>
+    {% endif %}
+
+    <div class="mt-5 overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200 text-sm">
+        <thead class="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <tr>
+            <th class="py-2 pr-4">Nodo</th>
+            <th class="py-2 pr-4">Estado</th>
+            <th class="py-2 pr-4">Contador</th>
+            <th class="py-2 pr-4">Recibidas</th>
+            <th class="py-2 pr-4">Pérdida</th>
+            <th class="py-2 pr-4">Rechazadas</th>
+            <th class="py-2 pr-4">Reinicios</th>
+            <th class="py-2 pr-4">Último contacto</th>
+            {% if puede_gestionar %}<th class="py-2"><span class="sr-only">Acciones</span></th>{% endif %}
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for n in gw.nodos.all %}
+            <tr>
+              <td class="py-2 pr-4 font-medium text-slate-800">{{ n }}</td>
+              <td class="py-2 pr-4">
+                {% if not n.activo %}<span class="etiqueta bg-rose-100 text-rose-700">Revocado</span>
+                {% elif n.en_linea %}<span class="etiqueta bg-emerald-100 text-emerald-700">En línea</span>
+                {% else %}<span class="etiqueta bg-slate-100 text-slate-600">Sin datos</span>{% endif %}
+              </td>
+              <td class="py-2 pr-4 tabular-nums">{{ n.ultimo_contador|default_if_none:"—" }}</td>
+              <td class="py-2 pr-4 tabular-nums">{{ n.tramas_recibidas|intcomma }}</td>
+              <td class="py-2 pr-4 tabular-nums">{{ n.porcentaje_perdida }} %</td>
+              <td class="py-2 pr-4 tabular-nums">{{ n.tramas_rechazadas|intcomma }}</td>
+              <td class="py-2 pr-4 tabular-nums">{{ n.reinicios }}</td>
+              <td class="whitespace-nowrap py-2 pr-4 text-slate-500">{{ n.ultimo_contacto|naturaltime|default:"nunca" }}</td>
+              {% if puede_gestionar %}
+                <td class="py-2">
+                  <div class="flex gap-2">
+                    <form method="post" action="{% url 'tablero:rotar_clave' 'nodo' n.pk %}"
+                          data-confirmar="Se generará una clave nueva para {{ n }}. Tendrás que provisionar el ESP32 del nodo otra vez. ¿Continuar?">
+                      {% csrf_token %}<button type="submit" class="btn btn-secundario">Rotar clave</button>
+                    </form>
+                    <form method="post" action="{% url 'tablero:cambiar_estado' 'nodo' n.pk %}"
+                          data-confirmar="{% if n.activo %}Las tramas de {{ n }} se rechazarán. ¿Revocarlo?{% else %}¿Reactivar {{ n }}?{% endif %}">
+                      {% csrf_token %}<button type="submit" class="btn {% if n.activo %}btn-peligro{% else %}btn-primario{% endif %}">{% if n.activo %}Revocar{% else %}Reactivar{% endif %}</button>
+                    </form>
+                  </div>
+                </td>
+              {% endif %}
+            </tr>
+          {% empty %}
+            <tr><td colspan="9" class="py-4 text-center text-slate-500">Este gateway no tiene nodos.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% empty %}
+  <div class="tarjeta p-8 text-center text-slate-500">No hay dispositivos. Ejecuta <code>python manage.py inicializar</code>.</div>
+{% endfor %}
+{% endblock %}

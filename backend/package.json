@@ -1,0 +1,16 @@
+{
+  "name": "telemetria-tablero",
+  "private": true,
+  "description": "Recursos del frontend: Tailwind CSS compilado y Chart.js servidos localmente por Django (sin CDN).",
+  "scripts": {
+    "vendor": "node scripts/copiar_vendor.mjs",
+    "css": "tailwindcss -i ./static_src/app.css -o ./static/css/app.css --minify",
+    "css:watch": "tailwindcss -i ./static_src/app.css -o ./static/css/app.css --watch",
+    "build": "npm run vendor && npm run css"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.0",
+    "chart.js": "^4.4.0",
+    "tailwindcss": "^4.1.0"
+  }
+}

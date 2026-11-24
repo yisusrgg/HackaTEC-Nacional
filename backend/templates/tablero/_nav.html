@@ -1,0 +1,13 @@
+{% with actual=request.resolver_match.url_name %}
+{% if perms.telemetria.ver_tablero %}
+  <a href="{% url 'tablero:resumen' %}" class="enlace-nav{% if actual == 'resumen' or actual == 'senal' %} enlace-nav-activo{% endif %}">Resumen</a>
+  <a href="{% url 'tablero:alertas' %}" class="enlace-nav{% if actual == 'alertas' %} enlace-nav-activo{% endif %}">Alertas</a>
+  <a href="{% url 'tablero:dispositivos' %}" class="enlace-nav{% if actual == 'dispositivos' %} enlace-nav-activo{% endif %}">Dispositivos</a>
+{% endif %}
+{% if perms.auditoria.ver_auditoria %}
+  <a href="{% url 'tablero:seguridad' %}" class="enlace-nav{% if actual == 'seguridad' %} enlace-nav-activo{% endif %}">Seguridad</a>
+{% endif %}
+{% if user.is_staff %}
+  <a href="{% url 'admin:index' %}" class="enlace-nav">Administración</a>
+{% endif %}
+{% endwith %}

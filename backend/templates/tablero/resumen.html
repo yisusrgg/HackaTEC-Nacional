@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% load static humanize %}
+{% block titulo %}Resumen{% endblock %}
+{% block encabezado %}Resumen en tiempo real{% endblock %}
+
+{% block contenido %}
+{% if not nodo %}
+  <div class="tarjeta p-8 text-center">
+    <p class="text-lg font-semibold text-slate-900">Aún no hay nodos registrados</p>
+    <p class="mt-2 text-sm text-slate-500">Ejecuta <code class="rounded bg-slate-100 px-1.5 py-0.5">python manage.py inicializar</code> para crear el gateway y el nodo de demostración.</p>
+  </div>
+{% else %}
+  <div id="aviso-conexion" class="mb-4 hidden rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">No se pudo actualizar el tablero; reintentando…</div>
+
+  <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <p class="text-sm text-slate-500">{{ nodo.gateway.vehiculo }}</p>
+      <h2 class="text-xl font-semibold text-slate-900">{{ nodo.nombre }} <span class="font-normal text-slate-400">· nodo {{ nodo.numero }}</span></h2>
+    </div>
+    <div class="flex flex-wrap items-center gap-3">
+      {% if nodos|length > 1 %}
+        <form method="get" class="flex items-center gap-2">
+          <label for="selector-nodo" class="text-sm text-slate-500">Nodo</label>
+          <select id="selector-nodo" name="nodo" class="campo w-auto" data-autoenviar>
+            {% for n in nodos %}<option value="{{ n.numero }}"{% if n.pk == nodo.pk %} selected{% endif %}>{{ n }}</option>{% endfor %}
+          </select>
+        </form>
+      {% endif %}
+      <p class="text-xs text-slate-500">Actualizado: <span id="ultima-actualizacion">—</span></p>
+    </div>
+  </div>
+
+  <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div class="tarjeta p-4">
+      <p class="text-sm font-medium text-slate-500">Gateway {{ nodo.gateway.identificador }}</p>
+      <p class="mt-2"><span id="gw-pastilla" class="etiqueta bg-slate-100 text-slate-600">—</span></p>
+      <p class="mt-2 text-xs text-slate-500">Wi-Fi <span id="gw-rssi">—</span> · cola <span id="gw-cola">—</span></p>
+    </div>
+    <div class="tarjeta p-4">
+      <p class="text-sm font-medium text-slate-500">Bus CAN propio</p>
+      <p class="mt-2 text-2xl font-semibold text-slate-900" id="can-estado">—</p>
+      <p class="mt-1 text-xs text-slate-500">Errores RX/TX <span id="can-errores">—</span> · <span id="can-bus">—</span></p>
+    </div>
+    <div class="tarjeta p-4">
+      <p class="text-sm font-medium text-slate-500">Transmisión del nodo</p>
+      <p class="mt-2 text-2xl font-semibold text-slate-900" id="nodo-perdida">—</p>
+      <p class="mt-1 text-xs text-slate-500">Recibidas <span id="nodo-recibidas">—</span> · rechazadas <span id="nodo-rechazadas">—</span> · reinicios <span id="nodo-reinicios">—</span></p>
+    </div>
+    <div class="tarjeta p-4">
+      <p class="text-sm font-medium text-slate-500">Alertas y seguridad</p>
+      <p class="mt-2 text-2xl font-semibold text-slate-900"><span id="alertas-activas">—</span> <span class="text-sm font-normal text-slate-500">alertas activas</span></p>
+      <p class="mt-1 text-xs text-slate-500"><span id="eventos-criticos">—</span> eventos críticos en 24 h</p>
+    </div>
+  </div>
+
+  {% for grupo in grupos %}
+    <section class="mt-8">
+      <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">{{ grupo.nombre }}</h3>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+        {% for s in grupo.senales %}
+          <a href="{% url 'tablero:senal' s.codigo %}?nodo={{ nodo.numero }}" data-senal="{{ s.codigo }}"
+             class="tarjeta block border-l-4 border-l-slate-300 p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+            <p class="text-sm font-medium text-slate-500">{{ s.nombre }}</p>
+            <p class="mt-2 text-3xl font-semibold tabular-nums text-slate-900" data-campo="texto">—</p>
+            <p class="mt-1 text-xs text-slate-500" data-campo="estado">Esperando datos…</p>
+          </a>
+        {% endfor %}
+      </div>
+    </section>
+  {% endfor %}
+
+  <section class="mt-8">
+    <div class="mb-3 flex items-center justify-between">
+      <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Alertas activas</h3>
+      <a href="{% url 'tablero:alertas' %}" class="text-sm font-medium text-blue-700 hover:underline">Ver todas</a>
+    </div>
+    <div class="tarjeta divide-y divide-slate-100">
+      {% for a in alertas %}
+        <div class="flex items-start gap-3 px-4 py-3">
+          {% include "tablero/_severidad.html" with severidad=a.severidad %}
+          <div class="min-w-0 flex-1">
+            <p class="text-sm text-slate-800">{{ a.mensaje }}</p>
+            <p class="text-xs text-slate-500">{{ a.get_tipo_display }} · {{ a.ultima_vez|naturaltime }}{% if a.ocurrencias > 1 %} · {{ a.ocurrencias }} veces{% endif %}</p>
+          </div>
+        </div>
+      {% empty %}
+        <p class="px-4 py-6 text-center text-sm text-slate-500">Sin alertas activas.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  {{ config|json_script:"config-resumen" }}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}{% if nodo %}<script src="{% static 'js/resumen.js' %}"></script>{% endif %}{% endblock %}

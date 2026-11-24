@@ -1,0 +1,269 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1560 1000" width="1560" height="1000" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
+  <title>Nodo 1 · ESP32 de sensores — diagrama de conexiones</title>
+  <style>
+    .caja { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 1.2; }
+    .panel { fill: #f8fafc; stroke: #e2e8f0; stroke-width: 1.2; }
+    .t { font-size: 12px; font-weight: 600; fill: #0f172a; }
+    .s { font-size: 11px; fill: #475569; }
+    .p { font-size: 10.5px; font-weight: 700; fill: #334155; font-family: ui-monospace, Consolas, monospace; }
+    .pin { font-size: 10.5px; font-weight: 600; fill: #e2e8f0; font-family: ui-monospace, Consolas, monospace; }
+    .gris { font-size: 10.5px; fill: #94a3b8; }
+    .rojo { font-size: 10.5px; font-weight: 700; fill: #dc2626; }
+    .cable { fill: none; stroke-width: 2.6; stroke-linecap: round; }
+    .ac { stroke: #2563eb; } .san { stroke: #0d9488; } .luz { stroke: #db2777; } .elec { stroke: #7c3aed; }
+    .datos { stroke: #475569; } .canh { stroke: #ca8a04; } .canl { stroke: #16a34a; }
+    .v5 { stroke: #dc2626; } .v33 { stroke: #ea580c; } .gnd { stroke: #111827; }
+    .res { fill: #ffffff; stroke: #334155; stroke-width: 1.4; }
+    .esq { fill: none; stroke: #334155; stroke-width: 1.6; }
+    .punto { fill: #334155; }
+    .pd { fill: #fbbf24; stroke: #92400e; stroke-width: 1; }
+    .b33 { fill: #ffedd5; } .b5 { fill: #fee2e2; } .bvin { fill: #ede9fe; }
+    .tb33 { fill: #9a3412; font-size: 10.5px; font-weight: 700; }
+    .tb5 { fill: #991b1b; font-size: 10.5px; font-weight: 700; }
+    .tbvin { fill: #5b21b6; font-size: 10.5px; font-weight: 700; }
+    .h1 { font-size: 24px; font-weight: 700; fill: #0f172a; }
+    .h2 { font-size: 14px; fill: #475569; }
+    .h3 { font-size: 13px; font-weight: 700; fill: #0f172a; }
+  </style>
+  <rect width="1560" height="1000" fill="#ffffff"/>
+
+  <!-- Título y leyenda -->
+  <text class="h1" x="60" y="58">Nodo 1 · ESP32 de sensores — diagrama de conexiones</text>
+  <text class="h2" x="60" y="86">ESP32 DevKit V1 (30 pines) sobre placa de expansión · fila V en 3.3 V · todas las tierras unidas</text>
+
+  <line class="cable ac" x1="820" y1="96" x2="844" y2="96"/><text class="s" x="850" y="100">Aire acond.</text>
+  <line class="cable san" x1="960" y1="96" x2="984" y2="96"/><text class="s" x="990" y="100">Sanitario</text>
+  <line class="cable luz" x1="1080" y1="96" x2="1104" y2="96"/><text class="s" x="1110" y="100">Iluminación</text>
+  <line class="cable elec" x1="1210" y1="96" x2="1234" y2="96"/><text class="s" x="1240" y="100">Eléctrico</text>
+  <line class="cable datos" x1="1320" y1="96" x2="1344" y2="96"/><text class="s" x="1350" y="100">Señal TX/RX del CAN</text>
+  <line class="cable v5" x1="820" y1="122" x2="844" y2="122"/><text class="s" x="850" y="126">5 V</text>
+  <line class="cable v33" x1="900" y1="122" x2="924" y2="122"/><text class="s" x="930" y="126">3.3 V</text>
+  <line class="cable gnd" x1="990" y1="122" x2="1014" y2="122"/><text class="s" x="1020" y="126">GND</text>
+  <line class="cable canh" x1="1080" y1="122" x2="1104" y2="122"/><text class="s" x="1110" y="126">CAN H</text>
+  <line class="cable canl" x1="1170" y1="122" x2="1194" y2="122"/><text class="s" x="1200" y="126">CAN L</text>
+
+  <!-- Cables del lado izquierdo -->
+  <line class="cable luz" x1="390" y1="264" x2="600" y2="264"/>
+  <line class="cable luz" x1="390" y1="298" x2="600" y2="298"/>
+  <line class="cable elec" x1="390" y1="332" x2="600" y2="332"/>
+  <line class="cable san" x1="390" y1="366" x2="600" y2="366"/>
+  <line class="cable san" x1="390" y1="400" x2="600" y2="400"/>
+  <line class="cable san" x1="390" y1="468" x2="600" y2="468"/>
+  <line class="cable san" x1="390" y1="502" x2="600" y2="502"/>
+  <line class="cable ac" x1="390" y1="536" x2="600" y2="536"/>
+  <line class="cable san" x1="390" y1="570" x2="600" y2="570"/>
+  <line class="cable luz" x1="390" y1="638" x2="600" y2="638"/>
+  <line class="cable gnd" x1="430" y1="672" x2="600" y2="672"/>
+  <line class="cable v5" x1="430" y1="706" x2="600" y2="706"/>
+
+  <!-- Componentes en línea -->
+  <text class="s" x="495" y="257" text-anchor="middle">+ 10 kΩ del pin a GND</text>
+  <rect class="res" x="440" y="326" width="40" height="12" rx="2"/>
+  <text class="s" x="460" y="321" text-anchor="middle">100 kΩ</text>
+  <text class="s" x="512" y="325">33 kΩ a GND</text>
+  <rect class="res" x="440" y="462" width="40" height="12" rx="2"/>
+  <text class="s" x="460" y="457" text-anchor="middle">1 kΩ</text>
+  <text class="s" x="512" y="461">2 kΩ a GND</text>
+
+  <!-- Cables del lado derecho -->
+  <line class="cable san" x1="900" y1="264" x2="1060" y2="264"/>
+  <line class="cable san" x1="900" y1="366" x2="1060" y2="366"/>
+  <line class="cable datos" x1="900" y1="502" x2="1060" y2="502"/>
+  <line class="cable datos" x1="900" y1="536" x2="1060" y2="536"/>
+  <line class="cable ac" x1="900" y1="570" x2="1060" y2="570"/>
+  <line class="cable gnd" x1="900" y1="672" x2="1060" y2="672"/>
+  <line class="cable v33" x1="900" y1="706" x2="1060" y2="706"/>
+  <line class="cable canh" x1="1360" y1="502" x2="1400" y2="502"/>
+  <line class="cable canl" x1="1360" y1="536" x2="1400" y2="536"/>
+
+  <!-- ESP32 -->
+  <rect x="600" y="150" width="300" height="600" rx="14" fill="#0f172a"/>
+  <rect x="680" y="160" width="140" height="30" rx="4" fill="#334155"/>
+  <text class="gris" x="750" y="180" text-anchor="middle">ESP32-WROOM-32</text>
+  <text x="750" y="212" text-anchor="middle" font-size="13" font-weight="700" fill="#ffffff">ESP32 DevKit V1</text>
+  <rect x="715" y="732" width="70" height="26" rx="4" fill="#94a3b8"/>
+  <text x="750" y="750" text-anchor="middle" font-size="11" font-weight="700" fill="#0f172a">USB</text>
+
+  <text class="pin" x="616" y="234">EN</text>
+  <text class="pin" x="616" y="268">VP · 36</text>
+  <text class="pin" x="616" y="302">VN · 39</text>
+  <text class="pin" x="616" y="336">GPIO34</text>
+  <text class="pin" x="616" y="370">GPIO35</text>
+  <text class="pin" x="616" y="404">GPIO32</text>
+  <text class="pin" x="616" y="438">GPIO33</text>
+  <text class="pin" x="616" y="472">GPIO25</text>
+  <text class="pin" x="616" y="506">GPIO26</text>
+  <text class="pin" x="616" y="540">GPIO27</text>
+  <text class="pin" x="616" y="574">GPIO14</text>
+  <text class="pin" x="616" y="608">GPIO12</text>
+  <text class="pin" x="616" y="642">GPIO13</text>
+  <text class="pin" x="616" y="676">GND</text>
+  <text class="pin" x="616" y="710">VIN · 5V</text>
+
+  <text class="pin" x="884" y="234" text-anchor="end">GPIO23</text>
+  <text class="pin" x="884" y="268" text-anchor="end">GPIO22</text>
+  <text class="pin" x="884" y="302" text-anchor="end">TX0 · 1</text>
+  <text class="pin" x="884" y="336" text-anchor="end">RX0 · 3</text>
+  <text class="pin" x="884" y="370" text-anchor="end">GPIO21</text>
+  <text class="pin" x="884" y="404" text-anchor="end">GPIO19</text>
+  <text class="pin" x="884" y="438" text-anchor="end">GPIO18</text>
+  <text class="pin" x="884" y="472" text-anchor="end">GPIO5</text>
+  <text class="pin" x="884" y="506" text-anchor="end">TX2 · 17</text>
+  <text class="pin" x="884" y="540" text-anchor="end">RX2 · 16</text>
+  <text class="pin" x="884" y="574" text-anchor="end">GPIO4</text>
+  <text class="pin" x="884" y="608" text-anchor="end">GPIO2</text>
+  <text class="pin" x="884" y="642" text-anchor="end">GPIO15</text>
+  <text class="pin" x="884" y="676" text-anchor="end">GND</text>
+  <text class="pin" x="884" y="710" text-anchor="end">3V3</text>
+
+  <g class="pd">
+    <circle cx="600" cy="230" r="4.5"/><circle cx="600" cy="264" r="4.5"/><circle cx="600" cy="298" r="4.5"/>
+    <circle cx="600" cy="332" r="4.5"/><circle cx="600" cy="366" r="4.5"/><circle cx="600" cy="400" r="4.5"/>
+    <circle cx="600" cy="434" r="4.5"/><circle cx="600" cy="468" r="4.5"/><circle cx="600" cy="502" r="4.5"/>
+    <circle cx="600" cy="536" r="4.5"/><circle cx="600" cy="570" r="4.5"/><circle cx="600" cy="604" r="4.5"/>
+    <circle cx="600" cy="638" r="4.5"/><circle cx="600" cy="672" r="4.5"/><circle cx="600" cy="706" r="4.5"/>
+    <circle cx="900" cy="230" r="4.5"/><circle cx="900" cy="264" r="4.5"/><circle cx="900" cy="298" r="4.5"/>
+    <circle cx="900" cy="332" r="4.5"/><circle cx="900" cy="366" r="4.5"/><circle cx="900" cy="400" r="4.5"/>
+    <circle cx="900" cy="434" r="4.5"/><circle cx="900" cy="468" r="4.5"/><circle cx="900" cy="502" r="4.5"/>
+    <circle cx="900" cy="536" r="4.5"/><circle cx="900" cy="570" r="4.5"/><circle cx="900" cy="604" r="4.5"/>
+    <circle cx="900" cy="638" r="4.5"/><circle cx="900" cy="672" r="4.5"/><circle cx="900" cy="706" r="4.5"/>
+  </g>
+
+  <!-- Notas junto a los pines sin cable -->
+  <text class="gris" x="588" y="234" text-anchor="end">reset</text>
+  <text class="gris" x="588" y="438" text-anchor="end">libre</text>
+  <text class="rojo" x="588" y="608" text-anchor="end">NO USAR · pin de arranque</text>
+  <text class="t" x="420" y="676" text-anchor="end">GND → tierra de todos los sensores</text>
+  <text class="t" x="420" y="710" text-anchor="end">5 V → VCC del HC-SR04 y del PIR</text>
+  <text class="gris" x="912" y="234">libre</text>
+  <text class="gris" x="912" y="302">USB serie · no usar</text>
+  <text class="gris" x="912" y="336">USB serie · no usar</text>
+  <text class="gris" x="912" y="404">libre</text>
+  <text class="gris" x="912" y="438">libre</text>
+  <text class="gris" x="912" y="472">libre</text>
+  <text class="gris" x="912" y="608">LED integrado (estado)</text>
+  <text class="gris" x="912" y="642">libre</text>
+  <text class="t" x="1070" y="676">GND → sensores y GND del gateway</text>
+  <text class="t" x="1070" y="710">3.3 V → DHT11, HW-201, VL53L0X, LDR, SN65HVD230</text>
+
+  <!-- Sensores del lado izquierdo -->
+  <rect class="caja" x="60" y="250" width="330" height="28" rx="6"/>
+  <text class="t" x="74" y="268">Fotorresistencia (LDR) · luz zona 1</text>
+  <rect class="b33" x="330" y="255" width="50" height="18" rx="9"/><text class="tb33" x="355" y="268" text-anchor="middle">3.3 V</text>
+
+  <rect class="caja" x="60" y="284" width="330" height="28" rx="6"/>
+  <text class="t" x="74" y="302">Módulo LDR analógico (AO) · zona 2</text>
+  <rect class="b33" x="330" y="289" width="50" height="18" rx="9"/><text class="tb33" x="355" y="302" text-anchor="middle">3.3 V</text>
+
+  <rect class="caja" x="60" y="318" width="330" height="28" rx="6"/>
+  <text class="t" x="74" y="336">Medición de voltaje (VIN de la placa)</text>
+  <rect class="bvin" x="330" y="323" width="50" height="18" rx="9"/><text class="tbvin" x="355" y="336" text-anchor="middle">VIN</text>
+
+  <rect class="caja" x="60" y="352" width="330" height="62" rx="6"/>
+  <text class="t" x="74" y="378">Sensor de humedad de suelo (fuga)</text>
+  <text class="s" x="74" y="398">VCC desde GPIO32 · solo al medir</text>
+  <text class="p" x="382" y="370" text-anchor="end">AO</text>
+  <text class="p" x="382" y="404" text-anchor="end">VCC</text>
+
+  <rect class="caja" x="60" y="454" width="330" height="62" rx="6"/>
+  <text class="t" x="74" y="480">Ultrasónico HC-SR04 · nivel del tanque</text>
+  <text class="s" x="74" y="500">Alimentación 5 V (pin VIN)</text>
+  <text class="p" x="382" y="472" text-anchor="end">ECHO</text>
+  <text class="p" x="382" y="506" text-anchor="end">TRIG</text>
+
+  <rect class="caja" x="60" y="522" width="330" height="28" rx="6"/>
+  <text class="t" x="74" y="540">HW-201 · RPM del ventilador (A/C)</text>
+  <rect class="b33" x="330" y="527" width="50" height="18" rx="9"/><text class="tb33" x="355" y="540" text-anchor="middle">3.3 V</text>
+
+  <rect class="caja" x="60" y="556" width="330" height="28" rx="6"/>
+  <text class="t" x="74" y="574">PIR HC-SR501 · presencia</text>
+  <rect class="b5" x="330" y="561" width="50" height="18" rx="9"/><text class="tb5" x="355" y="574" text-anchor="middle">5 V</text>
+
+  <rect class="caja" x="60" y="624" width="330" height="28" rx="6"/>
+  <text class="t" x="74" y="642">Módulo LDR digital (DO) · zona 3</text>
+  <rect class="b33" x="330" y="629" width="50" height="18" rx="9"/><text class="tb33" x="355" y="642" text-anchor="middle">3.3 V</text>
+
+  <!-- Sensores y transceptor del lado derecho -->
+  <rect class="caja" x="1060" y="250" width="300" height="130" rx="6"/>
+  <text class="h3" x="1210" y="300" text-anchor="middle">Láser ToF VL53L0X</text>
+  <text class="s" x="1210" y="322" text-anchor="middle">Puerta del sanitario (abierta / cerrada)</text>
+  <text class="s" x="1210" y="344" text-anchor="middle">Alimentación 3.3 V · bus I²C</text>
+  <text class="p" x="1070" y="268">SCL</text>
+  <text class="p" x="1070" y="370">SDA</text>
+
+  <rect class="caja" x="1060" y="488" width="300" height="62" rx="6"/>
+  <text class="t" x="1210" y="513" text-anchor="middle">Transceptor CAN SN65HVD230</text>
+  <text class="s" x="1210" y="533" text-anchor="middle">3.3 V · resistencia de 120 Ω</text>
+  <text class="p" x="1070" y="506">CTX</text>
+  <text class="p" x="1070" y="540">CRX</text>
+  <text class="p" x="1350" y="506" text-anchor="end">CANH</text>
+  <text class="p" x="1350" y="540" text-anchor="end">CANL</text>
+
+  <rect class="caja" x="1060" y="556" width="300" height="28" rx="6"/>
+  <text class="t" x="1074" y="574">DHT11 · temp. y humedad del A/C</text>
+  <rect class="b33" x="1300" y="561" width="50" height="18" rx="9"/><text class="tb33" x="1325" y="574" text-anchor="middle">3.3 V</text>
+
+  <rect x="1400" y="470" width="140" height="98" rx="8" fill="#ecfdf5" stroke="#16a34a" stroke-width="1.4"/>
+  <text class="h3" x="1470" y="494" text-anchor="middle">Bus CAN propio</text>
+  <text class="s" x="1470" y="513" text-anchor="middle">250 kbit/s · par trenzado</text>
+  <text class="t" x="1470" y="534" text-anchor="middle">→ Gateway</text>
+  <text class="s" x="1470" y="553" text-anchor="middle">(ESP32 #2)</text>
+
+  <!-- Detalle de divisores -->
+  <rect class="panel" x="60" y="790" width="330" height="180" rx="10"/>
+  <text class="h3" x="76" y="816">Divisor del ECHO (5 V → 3.3 V)</text>
+  <text class="p" x="80" y="872">ECHO</text>
+  <line class="esq" x1="124" y1="868" x2="180" y2="868"/>
+  <rect class="res" x="180" y="860" width="56" height="16" rx="2"/>
+  <text class="s" x="208" y="853" text-anchor="middle">1 kΩ</text>
+  <line class="esq" x1="236" y1="868" x2="310" y2="868"/>
+  <circle class="punto" cx="275" cy="868" r="3.5"/>
+  <text class="p" x="316" y="872">GPIO25</text>
+  <line class="esq" x1="275" y1="868" x2="275" y2="888"/>
+  <rect class="res" x="267" y="888" width="16" height="40" rx="2"/>
+  <text class="s" x="290" y="912">2 kΩ</text>
+  <line class="esq" x1="275" y1="928" x2="275" y2="942"/>
+  <line class="esq" x1="261" y1="942" x2="289" y2="942"/><line class="esq" x1="266" y1="948" x2="284" y2="948"/><line class="esq" x1="271" y1="954" x2="279" y2="954"/>
+  <text class="s" x="296" y="952">GND</text>
+
+  <rect class="panel" x="420" y="790" width="330" height="180" rx="10"/>
+  <text class="h3" x="436" y="816">Fotorresistencia de la zona 1</text>
+  <text class="p" x="440" y="872">3.3 V</text>
+  <line class="esq" x1="484" y1="868" x2="540" y2="868"/>
+  <rect class="res" x="540" y="860" width="56" height="16" rx="2"/>
+  <text class="s" x="568" y="853" text-anchor="middle">LDR</text>
+  <line class="esq" x1="596" y1="868" x2="670" y2="868"/>
+  <circle class="punto" cx="635" cy="868" r="3.5"/>
+  <text class="p" x="676" y="872">VP · 36</text>
+  <line class="esq" x1="635" y1="868" x2="635" y2="888"/>
+  <rect class="res" x="627" y="888" width="16" height="40" rx="2"/>
+  <text class="s" x="650" y="912">10 kΩ</text>
+  <line class="esq" x1="635" y1="928" x2="635" y2="942"/>
+  <line class="esq" x1="621" y1="942" x2="649" y2="942"/><line class="esq" x1="626" y1="948" x2="644" y2="948"/><line class="esq" x1="631" y1="954" x2="639" y2="954"/>
+  <text class="s" x="656" y="952">GND</text>
+
+  <rect class="panel" x="780" y="790" width="330" height="180" rx="10"/>
+  <text class="h3" x="796" y="816">Medición de voltaje (hasta ~12 V)</text>
+  <text class="p" x="800" y="872">VIN</text>
+  <line class="esq" x1="844" y1="868" x2="900" y2="868"/>
+  <rect class="res" x="900" y="860" width="56" height="16" rx="2"/>
+  <text class="s" x="928" y="853" text-anchor="middle">100 kΩ</text>
+  <line class="esq" x1="956" y1="868" x2="1030" y2="868"/>
+  <circle class="punto" cx="995" cy="868" r="3.5"/>
+  <text class="p" x="1036" y="872">GPIO34</text>
+  <line class="esq" x1="995" y1="868" x2="995" y2="888"/>
+  <rect class="res" x="987" y="888" width="16" height="40" rx="2"/>
+  <text class="s" x="1010" y="912">33 kΩ</text>
+  <line class="esq" x1="995" y1="928" x2="995" y2="942"/>
+  <line class="esq" x1="981" y1="942" x2="1009" y2="942"/><line class="esq" x1="986" y1="948" x2="1004" y2="948"/><line class="esq" x1="991" y1="954" x2="999" y2="954"/>
+  <text class="s" x="1016" y="952">GND</text>
+
+  <rect class="panel" x="1140" y="790" width="380" height="180" rx="10"/>
+  <text class="h3" x="1156" y="816">Antes de energizar</text>
+  <text class="s" x="1158" y="842">• Jumper de la fila V de la placa en 3.3 V</text>
+  <text class="s" x="1158" y="862">• HC-SR04 y PIR a 5 V (pin VIN)</text>
+  <text class="s" x="1158" y="882">• Nada conectado a GPIO12 (impide el arranque)</text>
+  <text class="s" x="1158" y="902">• Analógicos solo en GPIO32–39 (ADC1)</text>
+  <text class="s" x="1158" y="922">• Alimenta por USB o con 7–9 V, no con 12 V</text>
+  <text class="s" x="1158" y="942">• Entre CANH y CANL deben medirse ≈ 60 Ω (apagado)</text>
+</svg>

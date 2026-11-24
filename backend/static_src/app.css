@@ -1,0 +1,35 @@
+/* Fuente de Tailwind. Se compila a static/css/app.css con:  npm run css   (o npm run css:watch) */
+@import "tailwindcss";
+
+@source "../templates";
+@source "../static/js";
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50;
+  }
+  .btn-primario {
+    @apply bg-blue-700 text-white hover:bg-blue-800 focus-visible:ring-blue-600;
+  }
+  .btn-secundario {
+    @apply border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 focus-visible:ring-slate-400;
+  }
+  .btn-peligro {
+    @apply bg-rose-600 text-white hover:bg-rose-700 focus-visible:ring-rose-500;
+  }
+  .tarjeta {
+    @apply rounded-xl border border-slate-200 bg-white shadow-sm;
+  }
+  .etiqueta {
+    @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium;
+  }
+  .campo {
+    @apply block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/30;
+  }
+  .enlace-nav {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap text-slate-300 transition hover:bg-slate-800 hover:text-white;
+  }
+  .enlace-nav-activo {
+    @apply bg-slate-800 text-white;
+  }
+}

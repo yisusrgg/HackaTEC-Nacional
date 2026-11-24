@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block titulo %}Alertas{% endblock %}
+{% block encabezado %}Alertas{% endblock %}
+
+{% block contenido %}
+<div class="mb-4 flex flex-wrap gap-2">
+  {% for clave, etiqueta in filtros %}
+    <a href="?estado={{ clave }}" class="btn {% if filtro == clave %}btn-primario{% else %}btn-secundario{% endif %}">{{ etiqueta }}</a>
+  {% endfor %}
+</div>
+
+<div class="tarjeta overflow-x-auto">
+  <table class="min-w-full divide-y divide-slate-200 text-sm">
+    <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+      <tr>
+        <th class="px-4 py-3">Severidad</th>
+        <th class="px-4 py-3">Alerta</th>
+        <th class="px-4 py-3">Estado</th>
+        <th class="px-4 py-3">Veces</th>
+        <th class="px-4 py-3">Última vez</th>
+        <th class="px-4 py-3"><span class="sr-only">Acciones</span></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for a in alertas %}
+        <tr class="align-top">
+          <td class="px-4 py-3">{% include "tablero/_severidad.html" with severidad=a.severidad %}</td>
+          <td class="px-4 py-3">
+            <p class="font-medium text-slate-800">{{ a.mensaje }}</p>
+            <p class="text-xs text-slate-500">{{ a.get_tipo_display }}{% if a.nodo %} · {{ a.nodo }}{% endif %}{% if a.gateway %} · {{ a.gateway }}{% endif %}</p>
+            {% if a.atendida_por %}
+              <p class="mt-1 text-xs text-slate-500">{{ a.get_estado_display }} por {{ a.atendida_por }} {{ a.atendida_en|naturaltime }}{% if a.nota %}: «{{ a.nota }}»{% endif %}</p>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3">
+            {% if a.estado == "ABIERTA" %}<span class="etiqueta bg-rose-50 text-rose-700">Abierta</span>
+            {% elif a.estado == "ATENDIDA" %}<span class="etiqueta bg-blue-50 text-blue-700">Atendida</span>
+            {% else %}<span class="etiqueta bg-emerald-50 text-emerald-700">Resuelta</span>{% endif %}
+          </td>
+          <td class="px-4 py-3 tabular-nums">{{ a.ocurrencias }}</td>
+          <td class="whitespace-nowrap px-4 py-3 text-slate-500" title="{{ a.ultima_vez }}">{{ a.ultima_vez|naturaltime }}</td>
+          <td class="px-4 py-3">
+            {% if perms.telemetria.atender_alerta and a.activa %}
+              <form method="post" action="{% url 'tablero:atender_alerta' a.pk %}" class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                {% csrf_token %}
+                <input type="hidden" name="siguiente" value="{{ request.get_full_path }}">
+                <input name="nota" maxlength="255" placeholder="Nota (opcional)" class="campo sm:w-44" aria-label="Nota">
+                {% if a.estado == "ABIERTA" %}<button type="submit" name="accion" value="atender" class="btn btn-secundario">Atender</button>{% endif %}
+                <button type="submit" name="accion" value="resolver" class="btn btn-primario">Resolver</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">No hay alertas en esta vista.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "tablero/_paginacion.html" %}
+{% endblock %}

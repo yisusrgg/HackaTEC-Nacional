@@ -1,0 +1,22 @@
+# Secretos y datos locales (NUNCA subir)
+backend/.env
+backend/certs/
+backend/db.sqlite3*
+backend/staticfiles/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node (Tailwind y Chart.js se compilan a backend/static)
+backend/node_modules/
+
+# PlatformIO
+firmware/.pio/
+firmware/.vscode/
+
+# Sistema
+.DS_Store
+Thumbs.db

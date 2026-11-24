@@ -1,0 +1,9 @@
+{% if is_paginated %}
+<nav class="mt-4 flex items-center justify-between text-sm" aria-label="Paginación">
+  <span class="text-slate-500">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+  <div class="flex gap-2">
+    {% if page_obj.has_previous %}<a class="btn btn-secundario" href="?{% if parametros %}{{ parametros }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">Anterior</a>{% endif %}
+    {% if page_obj.has_next %}<a class="btn btn-secundario" href="?{% if parametros %}{{ parametros }}&amp;{% endif %}page={{ page_obj.next_page_number }}">Siguiente</a>{% endif %}
+  </div>
+</nav>
+{% endif %}
