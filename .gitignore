@@ -2,6 +2,7 @@
 backend/.env
 backend/certs/
 backend/db.sqlite3*
+backend/mysql_crear_bd.sql
 backend/staticfiles/
 
 # Python

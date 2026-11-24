@@ -30,23 +30,37 @@ tablero con tendencias y alertas.
 
 ## Arranque rápido (Windows · PowerShell)
 
-> OneDrive sincroniza `backend/.venv` y `backend/node_modules` (miles de archivos) y puede bloquear la base de
-> datos SQLite. Si pueden, saquen el proyecto de OneDrive, o al menos muevan la base de datos con `SQLITE_RUTA`.
+> OneDrive sincroniza `backend/.venv` y `backend/node_modules` (miles de archivos). Si pueden, saquen el
+> proyecto de OneDrive.
 
-### 1. Backend (Python 3.10 o superior; probado con 3.14)
+### 1. Backend (Python 3.11 o superior y MySQL 8; probado con Python 3.14)
 
 ```
 cd backend
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
-python scripts/generar_env.py
+python scripts/generar_env.py --motor mysql
+```
+
+Ese comando crea el `.env` y el archivo `mysql_crear_bd.sql`. Ese SQL crea la base `hackatecNacional` (utf8mb4) y
+un usuario con el mismo nombre y contraseña aleatoria, la misma que quedó en el `.env`. Para otros nombres usen
+`--bd-nombre` y `--bd-usuario`.
+
+1. Abre `mysql_crear_bd.sql` en **MySQL Workbench** con tu conexión de root y ejecútalo (botón del rayo).
+2. **Bórralo**, porque contiene la contraseña.
+3. Termina con:
+
+```
 python manage.py migrate
 python manage.py inicializar --usuarios-demo
 ```
 
-- `requirements.txt` fija las versiones exactas con las que pasan las pruebas, así todo el equipo instala lo mismo.
-- Si PowerShell no deja ejecutar `activate` ("la ejecución de scripts está deshabilitada"), no hace falta activar:
+- **La base se elige con `DB_MOTOR`** en el `.env` (`mysql`, `sqlite` o `postgres`). La conexión se arma en
+  `config/settings.py`. Para trabajar sin MySQL, `python scripts/generar_env.py --motor sqlite --forzar`.
+- **`requirements.txt`** fija las versiones exactas con las que pasan las pruebas, así todo el equipo instala lo
+  mismo.
+- **Si PowerShell no deja ejecutar `activate`** ("la ejecución de scripts está deshabilitada"), no hace falta activar:
   usen `.venv\Scripts\python.exe` en lugar de `python`. Por ejemplo, `.venv\Scripts\python.exe manage.py migrate`.
 
 `inicializar` crea los roles, el catálogo de señales, el autobús, gateway y nodo de demostración, y tres usuarios
@@ -128,6 +142,9 @@ Para la **confiabilidad**:
 cd backend
 python manage.py test
 ```
+
+Con MySQL, Django crea y borra una base temporal `test_hackatecNacional`; el script `mysql_crear_bd.sql` ya le da
+permiso al usuario para eso.
 
 Son 56 pruebas: protocolo, ingesta, ataques (replay, MAC alterado, firma falsa, lote manipulado), bitácora
 encadenada, permisos por rol y bloqueo de login.

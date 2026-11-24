@@ -86,7 +86,26 @@ WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
 # --- Base de datos -------------------------------------------------------------------------------
-if os.environ.get("DB_MOTOR", "sqlite").lower() == "postgres":
+# Se elige con DB_MOTOR en el .env: sqlite (por defecto), mysql o postgres. Para MySQL:
+#   python scripts/generar_env.py --motor mysql --forzar
+DB_MOTOR = os.environ.get("DB_MOTOR", "sqlite").strip().lower()
+if DB_MOTOR == "mysql":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.mysql",  # driver: mysqlclient
+            "NAME": os.environ.get("DB_NOMBRE", "hackatecNacional"),
+            "USER": os.environ.get("DB_USUARIO", "hackatecNacional"),
+            "PASSWORD": os.environ.get("DB_PASSWORD", ""),
+            "HOST": os.environ.get("DB_HOST", "localhost"),
+            "PORT": os.environ.get("DB_PUERTO", "3306"),
+            "OPTIONS": {
+                "charset": "utf8mb4",  # acentos, "°" y cualquier carácter Unicode
+                "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",  # rechaza datos inválidos en vez de truncarlos
+            },
+            "TEST": {"CHARSET": "utf8mb4", "COLLATION": "utf8mb4_unicode_ci"},
+        }
+    }
+elif DB_MOTOR == "postgres":
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
@@ -95,9 +114,10 @@ if os.environ.get("DB_MOTOR", "sqlite").lower() == "postgres":
             "PASSWORD": os.environ.get("DB_PASSWORD", ""),
             "HOST": os.environ.get("DB_HOST", "127.0.0.1"),
             "PORT": os.environ.get("DB_PUERTO", "5432"),
-            "CONN_MAX_AGE": 60,
         }
     }
+elif DB_MOTOR != "sqlite":
+    raise ImproperlyConfigured(f"DB_MOTOR='{DB_MOTOR}' no es válido: usa sqlite, mysql o postgres.")
 else:
     DATABASES = {
         "default": {

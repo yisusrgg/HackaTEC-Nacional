@@ -8,9 +8,8 @@ class EventoSeguridadAdmin(admin.ModelAdmin):
     """Solo lectura: la bitácora no se edita ni se borra, ni siquiera desde el admin."""
 
     list_display = ("creado", "tipo", "severidad", "actor", "ip")
-    list_filter = ("severidad", "tipo")
+    list_filter = ("creado", "severidad", "tipo")  # sin date_hierarchy: en MySQL exige cargar las zonas horarias
     search_fields = ("actor", "ip")
-    date_hierarchy = "creado"
 
     def has_add_permission(self, request):
         return False

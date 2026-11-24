@@ -45,9 +45,9 @@ class SenalAdmin(admin.ModelAdmin):
 @admin.register(Medicion)
 class MedicionAdmin(admin.ModelAdmin):
     list_display = ("ts", "nodo", "senal", "valor", "calidad")
-    list_filter = ("calidad", "senal__subsistema")
+    # Filtro por fecha en vez de date_hierarchy: este último exige cargar las zonas horarias en MySQL.
+    list_filter = ("ts", "calidad", "senal__subsistema")
     list_select_related = ("nodo", "senal")
-    date_hierarchy = "ts"
 
     def has_add_permission(self, request):
         return False
