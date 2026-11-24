@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block titulo %}Nueva orden{% endblock %}
+{% block encabezado %}Nueva orden de servicio{% endblock %}
+
+{% block contenido %}
+<div class="pantalla angosto">
+  <div>
+    <a href="{% if alerta %}{% url 'tablero:alertas' %}{% else %}{% url 'tablero:ordenes' %}{% endif %}" class="enlace-discreto">← {% if alerta %}Alertas{% else %}Órdenes de servicio{% endif %}</a>
+    <p class="rotulo espacio-arriba">Servicio y reparaciones</p>
+    <h2 class="titulo-pantalla">Nueva orden de servicio</h2>
+  </div>
+
+  {% if alerta %}
+    <div class="mensaje mensaje-info">
+      <p class="mensaje-titulo">Desde la alerta: {{ alerta.mensaje }}</p>
+      <p>Al crear la orden, la alerta pasa a «Atendida». Se resolverá sola cuando la orden se cierre.</p>
+    </div>
+  {% endif %}
+
+  <form method="post" class="panel" novalidate>
+    {% csrf_token %}
+    {% if alerta %}<input type="hidden" name="alerta" value="{{ alerta.pk }}">{% endif %}
+    {% if form.non_field_errors %}<div class="panel-cuerpo"><div class="mensaje mensaje-error">{{ form.non_field_errors|join:" " }}</div></div>{% endif %}
+
+    <div class="panel-encabezado"><h3>La falla</h3></div>
+    <div class="panel-cuerpo formulario">
+      {% include "tablero/_campo.html" with campo=form.vehiculo %}
+      {% include "tablero/_campo.html" with campo=form.titulo %}
+      {% include "tablero/_campo.html" with campo=form.diagnostico %}
+      {% include "tablero/_campo.html" with campo=form.responsable %}
+    </div>
+
+    <div class="panel-encabezado borde-arriba"><h3>Cómo se validará la reparación</h3></div>
+    <div class="panel-cuerpo formulario">
+      <p class="secundario">Elige la señal que mostró la falla. Después de la reparación, la orden se cierra sola si esa señal se mantiene dentro de sus umbrales todo el tiempo indicado. Si no eliges señal, Ingeniería la valida manualmente.</p>
+      {% include "tablero/_campo.html" with campo=form.nodo %}
+      {% include "tablero/_campo.html" with campo=form.senal %}
+      {% include "tablero/_campo.html" with campo=form.minutos_validacion %}
+    </div>
+
+    <div class="panel-cuerpo borde-arriba acciones">
+      <button type="submit" class="btn btn-primario">Crear orden</button>
+      <a href="{% url 'tablero:ordenes' %}" class="btn btn-texto">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

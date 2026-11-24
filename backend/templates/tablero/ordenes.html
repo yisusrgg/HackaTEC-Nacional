@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block titulo %}Órdenes de servicio{% endblock %}
+{% block encabezado %}Órdenes de servicio{% endblock %}
+
+{% block contenido %}
+<div class="pantalla">
+  <div class="pantalla-encabezado">
+    <div>
+      <p class="rotulo">Servicio y reparaciones</p>
+      <h2 class="titulo-pantalla">Órdenes de servicio</h2>
+      <p class="introduccion">Cada orden sigue la falla desde el diagnóstico hasta que los datos confirman que la reparación funcionó.</p>
+    </div>
+    <div class="pantalla-acciones">
+      <nav class="segmentado" aria-label="Filtrar órdenes">
+        {% for clave, etiqueta in filtros %}
+          <a href="?estado={{ clave }}"{% if filtro == clave %} class="activo" aria-current="page"{% endif %}>{{ etiqueta }}</a>
+        {% endfor %}
+      </nav>
+      {% if perms.servicio.gestionar_ordenes %}<a href="{% url 'tablero:orden_nueva' %}" class="btn btn-primario btn-chico">Nueva orden</a>{% endif %}
+    </div>
+  </div>
+
+  <div class="indicadores indicadores-3">
+    <div class="indicador"><p class="rotulo">En diagnóstico</p><p class="cifra">{{ conteo.DIAGNOSTICO }}</p></div>
+    <div class="indicador"><p class="rotulo">En reparación</p><p class="cifra">{{ conteo.REPARACION }}</p></div>
+    <div class="indicador"><p class="rotulo">En validación</p><p class="cifra">{{ conteo.VALIDACION }}</p><p class="indicador-detalle">se cierran solas si los datos confirman la reparación</p></div>
+  </div>
+
+  <div class="panel">
+    {% for o in ordenes %}
+      <a class="orden-fila" href="{% url 'tablero:orden' o.pk %}">
+        <div class="orden-principal">
+          <p class="orden-folio"><span class="mono">{{ o.folio }}</span> {% include "tablero/_etapa.html" with etapa=o.etapa %}</p>
+          <p class="alerta-titulo">{{ o.titulo }}</p>
+          <p class="alerta-meta">{{ o.vehiculo }} · {% if o.responsable %}{{ o.responsable.get_full_name|default:o.responsable.get_username }}{% else %}sin responsable{% endif %} · abierta {{ o.creada|naturaltime }}</p>
+          {% if o.intentos %}<p class="orden-aviso">La falla volvió {{ o.intentos }} {% if o.intentos == 1 %}vez{% else %}veces{% endif %} durante la validación</p>{% endif %}
+        </div>
+        <div class="orden-avance" aria-hidden="true">
+          <div class="mini-etapas">{% for i in pasos %}<i{% if i <= o.indice_etapa %} class="hecha"{% endif %}></i>{% endfor %}</div>
+          <span class="secundario">{% if o.etapa == "CERRADA" %}{{ o.get_resultado_display }}{% elif o.etapa == "VALIDACION" and o.validacion_fin %}hasta {{ o.validacion_fin|date:"d/m H:i" }}{% else %}{{ o.get_etapa_display }}{% endif %}</span>
+        </div>
+      </a>
+    {% empty %}
+      <div class="vacio">
+        <h2>No hay órdenes en esta vista</h2>
+        <p>Crea una desde una alerta o con el botón «Nueva orden».</p>
+      </div>
+    {% endfor %}
+  </div>
+
+  {% include "tablero/_paginacion.html" %}
+</div>
+{% endblock %}

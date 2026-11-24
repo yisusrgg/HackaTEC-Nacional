@@ -31,6 +31,9 @@
           {% if a.atendida_por %}
             <p class="alerta-nota">{{ a.get_estado_display }} por {{ a.atendida_por }} {{ a.atendida_en|naturaltime }}{% if a.nota %}: «{{ a.nota }}»{% endif %}</p>
           {% endif %}
+          {% with orden=a.ordenes.first %}{% if orden %}
+            <p class="alerta-nota"><a href="{% url 'tablero:orden' orden.pk %}" class="enlace-discreto">Orden {{ orden.folio }} · {{ orden.get_etapa_display }}</a></p>
+          {% endif %}{% endwith %}
         </div>
 
         <dl class="alerta-datos">
@@ -52,15 +55,22 @@
           </div>
         </dl>
 
-        {% if perms.telemetria.atender_alerta and a.activa %}
-          <form method="post" action="{% url 'tablero:atender_alerta' a.pk %}" class="alerta-acciones">
-            {% csrf_token %}
-            <input type="hidden" name="siguiente" value="{{ request.get_full_path }}">
-            <input name="nota" maxlength="255" placeholder="Nota para el registro (opcional)" class="campo" aria-label="Nota">
-            {% if a.estado == "ABIERTA" %}<button type="submit" name="accion" value="atender" class="btn btn-secundario btn-chico">Marcar como atendida</button>{% endif %}
-            <button type="submit" name="accion" value="resolver" class="btn btn-primario btn-chico">Resolver</button>
-          </form>
-        {% endif %}
+        {% if a.activa %}{% if perms.telemetria.atender_alerta or perms.servicio.gestionar_ordenes %}
+          <div class="alerta-acciones">
+            {% if perms.telemetria.atender_alerta %}
+              <form method="post" action="{% url 'tablero:atender_alerta' a.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="siguiente" value="{{ request.get_full_path }}">
+                <input name="nota" maxlength="255" placeholder="Nota para el registro (opcional)" class="campo" aria-label="Nota">
+                {% if a.estado == "ABIERTA" %}<button type="submit" name="accion" value="atender" class="btn btn-secundario btn-chico">Marcar como atendida</button>{% endif %}
+                <button type="submit" name="accion" value="resolver" class="btn btn-primario btn-chico">Resolver</button>
+              </form>
+            {% endif %}
+            {% if perms.servicio.gestionar_ordenes and not a.ordenes.exists %}
+              <a href="{% url 'tablero:orden_nueva' %}?alerta={{ a.pk }}" class="btn btn-secundario btn-chico">Crear orden de servicio</a>
+            {% endif %}
+          </div>
+        {% endif %}{% endif %}
       </article>
     {% empty %}
       <p class="lista-vacia">No hay alertas en esta vista.</p>

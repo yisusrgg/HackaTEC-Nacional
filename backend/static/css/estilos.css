@@ -531,3 +531,84 @@ select.campo { width: auto; }
   .indicadores-5 .indicador { border-right: 0; }
   .grafica { height: 240px; }
 }
+
+
+/* ---------- 22. Órdenes de servicio ---------- */
+.indicadores-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.alerta-acciones form { display: contents; }   /* los campos del formulario se acomodan junto al botón de orden */
+
+/* Fila del listado */
+.orden-fila {
+  display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 24px; align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--linea);
+  color: var(--tinta); text-decoration: none;
+  transition: background-color 0.15s;
+}
+.orden-fila:last-child { border-bottom: 0; }
+.orden-fila:hover { background: var(--niebla); }
+.orden-principal { display: grid; gap: 2px; min-width: 0; }
+.orden-folio { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--gris); margin-bottom: 4px; }
+.orden-aviso { font-size: 12px; color: var(--aviso); }
+.orden-avance { display: grid; gap: 6px; justify-items: end; font-size: 12px; text-align: right; }
+.mini-etapas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; width: 100%; }
+.mini-etapas i { height: 4px; border-radius: 2px; background: var(--bruma); }
+.mini-etapas i.hecha { background: var(--tinta); }
+
+/* Recorrido de la orden */
+.etapas { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--linea); border-radius: var(--radio); }
+.etapas li { display: grid; gap: 2px; padding: 14px 18px; border-right: 1px solid var(--linea); font-size: 13px; color: var(--gris-claro); }
+.etapas li:last-child { border-right: 0; }
+.etapas b { font-size: 14px; font-weight: 500; }
+.etapas li.hecha { color: var(--gris); }
+.etapas li.hecha b { color: var(--tinta); }
+.etapas li.hecha b::before { content: "✓ "; color: var(--ok); }
+.etapas li.actual { color: var(--grafito); background: var(--niebla); box-shadow: inset 0 -2px 0 var(--tinta); }
+.etapas li.actual b { color: var(--tinta); font-weight: 600; }
+
+.dos-columnas { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.validacion { display: grid; gap: 12px; }
+.criterio { font-size: 14px; }
+.criterio b { font-weight: 500; }
+.progreso { appearance: none; display: block; width: 100%; height: 6px; border: 0; border-radius: 99px; background: var(--bruma); overflow: hidden; color: var(--tinta); }
+.progreso::-webkit-progress-bar { background: var(--bruma); }
+.progreso::-webkit-progress-value { background: var(--tinta); }
+.progreso::-moz-progress-bar { background: var(--tinta); }
+.grafica-chica { height: 220px; }
+.leyenda { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: var(--gris); }
+.leyenda span { display: inline-flex; align-items: center; gap: 6px; }
+.leyenda span::before { content: ""; width: 16px; height: 2px; background: var(--gris-claro); }
+.leyenda .leyenda-despues::before { background: var(--tinta); }
+.leyenda .leyenda-umbral::before { background: repeating-linear-gradient(90deg, var(--critico) 0 4px, transparent 4px 7px); }
+.ficha-columna { grid-template-columns: 1fr; }
+.ficha-texto { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+.ficha-texto dd { font-size: 14px; line-height: 1.6; }
+
+/* Formularios de la orden */
+.formulario { display: grid; gap: 16px; }
+.formulario-linea { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; border-bottom: 1px solid var(--linea); }
+.formulario-linea .campo { flex: 1; min-width: 220px; }
+textarea.campo { resize: vertical; }
+.campo-ayuda { font-size: 12px; color: var(--gris); }
+.campo-error { font-size: 12px; color: var(--critico); }
+.con-error .campo { border-color: var(--critico); }
+.borde-arriba { border-top: 1px solid var(--linea); }
+
+/* Registro de avances */
+.registro { list-style: none; margin: 0; padding: 0; }
+.registro li { display: grid; gap: 4px; padding: 14px 20px; border-bottom: 1px solid var(--linea); font-size: 14px; }
+.registro li:last-child { border-bottom: 0; }
+.registro-meta { font-size: 12px; color: var(--gris); }
+.registro-etapa { box-shadow: inset 3px 0 0 var(--tinta); }
+.registro-sistema { background: var(--niebla); box-shadow: inset 3px 0 0 var(--enlace); }
+
+@media (max-width: 900px) {
+  .dos-columnas, .indicadores-3 { grid-template-columns: 1fr; }
+  .indicadores-3 .indicador { border-right: 0; border-bottom: 1px solid var(--linea); }
+  .indicadores-3 .indicador:last-child { border-bottom: 0; }
+  .etapas { grid-template-columns: 1fr 1fr; }
+  .etapas li:nth-child(2) { border-right: 0; }
+  .etapas li:nth-child(-n + 2) { border-bottom: 1px solid var(--linea); }
+  .orden-fila { grid-template-columns: 1fr; gap: 10px; }
+  .orden-avance { justify-items: start; text-align: left; }
+}

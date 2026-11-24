@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% load static humanize %}
+{% block titulo %}{{ orden.folio }}{% endblock %}
+{% block encabezado %}Orden {{ orden.folio }}{% endblock %}
+
+{% block contenido %}
+<div class="pantalla">
+  <div class="pantalla-encabezado">
+    <div>
+      <a href="{% url 'tablero:ordenes' %}" class="enlace-discreto">← Órdenes de servicio</a>
+      <p class="rotulo espacio-arriba">{{ orden.vehiculo }}</p>
+      <h2 class="titulo-pantalla">{{ orden.titulo }} <small class="mono">{{ orden.folio }}</small></h2>
+    </div>
+    <div class="pantalla-acciones">{% include "tablero/_etapa.html" with etapa=orden.etapa %}</div>
+  </div>
+
+  {% if orden.etapa == "CANCELADA" %}
+    <div class="mensaje mensaje-aviso">Esta orden se canceló {{ orden.cerrada_en|naturaltime }}. El motivo está en el registro de abajo.</div>
+  {% else %}
+    <ol class="etapas" aria-label="Avance de la orden">
+      <li class="{% if orden.indice_etapa > 0 %}hecha{% elif orden.indice_etapa == 0 %}actual{% endif %}">
+        <b>Diagnóstico</b><span>abierta {{ orden.creada|date:"d/m H:i" }}</span>
+      </li>
+      <li class="{% if orden.indice_etapa > 1 %}hecha{% elif orden.indice_etapa == 1 %}actual{% endif %}">
+        <b>Reparación</b><span>{% if orden.intentos %}{{ orden.intentos }} {% if orden.intentos == 1 %}reintento{% else %}reintentos{% endif %}{% else %}el técnico registra la solución{% endif %}</span>
+      </li>
+      <li class="{% if orden.indice_etapa > 2 %}hecha{% elif orden.indice_etapa == 2 %}actual{% endif %}">
+        <b>Validación</b><span>{% if orden.validacion_inicio %}desde {{ orden.validacion_inicio|date:"d/m H:i" }}{% else %}{{ orden.get_minutos_validacion_display }} sin fallas{% endif %}</span>
+      </li>
+      <li class="{% if orden.indice_etapa == 3 %}hecha{% endif %}">
+        <b>Cierre</b><span>{% if orden.cerrada_en %}{{ orden.get_resultado_display }} · {{ orden.cerrada_en|date:"d/m H:i" }}{% else %}pendiente{% endif %}</span>
+      </li>
+    </ol>
+  {% endif %}
+
+  <div class="dos-columnas">
+    <section class="panel">
+      <div class="panel-encabezado">
+        <h3>Validación con datos</h3>
+        {% if validacion.estado == "en_curso" %}<span class="etiqueta etiqueta-info">En curso</span>
+        {% elif validacion.estado == "aprobada" or orden.resultado == "VALIDADA_DATOS" %}<span class="etiqueta etiqueta-ok">Validada</span>
+        {% elif validacion.estado == "sin_datos" %}<span class="etiqueta etiqueta-aviso">Faltan lecturas</span>
+        {% elif validacion.estado == "sin_criterio" %}<span class="etiqueta">Manual</span>
+        {% else %}<span class="etiqueta etiqueta-apagado">Pendiente</span>{% endif %}
+      </div>
+      <div class="panel-cuerpo validacion">
+        {% if orden.tiene_criterio %}
+          <p class="criterio">Criterio: <b>{{ orden.senal.nombre }}</b>
+            {% if orden.senal.umbral_bajo is not None %}por encima de {{ orden.senal.umbral_bajo|floatformat:"-2" }} {{ orden.senal.unidad }}{% endif %}
+            {% if orden.senal.umbral_bajo is not None and orden.senal.umbral_alto is not None %} y {% endif %}
+            {% if orden.senal.umbral_alto is not None %}{% if orden.senal.tipo == "BOOL" %}sin activarse{% else %}por debajo de {{ orden.senal.umbral_alto|floatformat:"-2" }} {{ orden.senal.unidad }}{% endif %}{% endif %}
+            durante <b>{{ orden.get_minutos_validacion_display }}</b>, con al menos {{ minimo_lecturas }} lecturas.</p>
+          {% if validacion.inicio %}
+            <progress class="progreso" value="{{ validacion.progreso }}" max="100" aria-label="Avance de la validación">{{ validacion.progreso }} %</progress>
+          {% endif %}
+          <p class="secundario">{{ validacion.texto }}</p>
+          <div class="grafica grafica-chica"><canvas id="grafica-orden" role="img" aria-label="Lecturas de {{ orden.senal.nombre }} antes y después de la reparación"></canvas></div>
+          <p class="leyenda"><span class="leyenda-antes">Antes de la reparación</span><span class="leyenda-despues">Después</span><span class="leyenda-umbral">Umbral</span></p>
+          {{ grafica|json_script:"datos-orden" }}
+        {% else %}
+          <p class="secundario">{{ validacion.texto }}</p>
+          <p class="secundario">Para que la orden se valide sola, elige una señal con umbrales al crearla.</p>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-encabezado"><h3>Datos de la orden</h3></div>
+      <dl class="ficha ficha-sin-borde ficha-columna">
+        <div><dt>Unidad</dt><dd>{{ orden.vehiculo }}</dd></div>
+        <div><dt>Nodo</dt><dd>{{ orden.nodo|default:"—" }}</dd></div>
+        <div><dt>Responsable</dt><dd>{% if orden.responsable %}{{ orden.responsable.get_full_name|default:orden.responsable.get_username }}{% else %}Sin asignar{% endif %}</dd></div>
+        <div><dt>Abierta por</dt><dd>{{ orden.creada_por.get_username|default:"—" }}<small>{{ orden.creada|date:"d/m/Y H:i" }}</small></dd></div>
+        <div><dt>Alerta de origen</dt><dd>{% if orden.alerta %}<a href="{% url 'tablero:alertas' %}?estado=todas">{{ orden.alerta.mensaje|truncatechars:60 }}</a><small>{{ orden.alerta.get_estado_display }}</small>{% else %}—{% endif %}</dd></div>
+      </dl>
+    </section>
+  </div>
+
+  {% if orden.abierta and puede_gestionar %}
+    <section class="panel">
+      <div class="panel-encabezado"><h3>Siguiente paso</h3></div>
+      <div class="panel-cuerpo">
+        {% if orden.etapa == "DIAGNOSTICO" %}
+          <form method="post" action="{% url 'tablero:orden_accion' orden.pk %}" class="formulario">
+            {% csrf_token %}<input type="hidden" name="accion" value="a_reparacion">
+            <div class="campo-grupo">
+              <label for="texto-diagnostico">Diagnóstico confirmado (opcional)</label>
+              <textarea id="texto-diagnostico" name="texto" rows="2" class="campo" placeholder="Causa encontrada y lo que se va a reparar"></textarea>
+            </div>
+            <div><button type="submit" class="btn btn-primario">Pasar a reparación</button></div>
+          </form>
+        {% elif orden.etapa == "REPARACION" %}
+          <form method="post" action="{% url 'tablero:orden_accion' orden.pk %}" class="formulario">
+            {% csrf_token %}<input type="hidden" name="accion" value="a_validacion">
+            <div class="campo-grupo">
+              <label for="texto-solucion">Solución aplicada</label>
+              <textarea id="texto-solucion" name="texto" rows="3" class="campo" required placeholder="Qué se hizo, refacciones usadas y mediciones"></textarea>
+            </div>
+            <p class="secundario">{% if orden.tiene_criterio %}Al registrarla empieza la validación de {{ orden.get_minutos_validacion_display }}: si {{ orden.senal.nombre|lower }} se mantiene dentro de sus umbrales, la orden se cierra sola.{% else %}Esta orden no tiene señal para validar con datos: después de registrarla, Ingeniería la valida manualmente.{% endif %}</p>
+            <div><button type="submit" class="btn btn-primario">Registrar reparación e iniciar validación</button></div>
+          </form>
+        {% elif orden.etapa == "VALIDACION" %}
+          {% if puede_validar %}
+            <form method="post" action="{% url 'tablero:orden_accion' orden.pk %}" class="formulario">
+              {% csrf_token %}<input type="hidden" name="accion" value="validar">
+              <p class="secundario">{% if orden.tiene_criterio %}La orden se cerrará sola al terminar la validación. Si ya comprobaste la reparación por otro medio, puedes cerrarla ahora.{% else %}Comprueba la reparación y ciérrala con una nota.{% endif %}</p>
+              <div class="campo-grupo">
+                <label for="texto-validar">Cómo se comprobó la reparación</label>
+                <textarea id="texto-validar" name="texto" rows="2" class="campo" required></textarea>
+              </div>
+              <div><button type="submit" class="btn btn-primario">Validar y cerrar</button></div>
+            </form>
+          {% else %}
+            <p class="secundario">La reparación está en validación. Si la falla vuelve, la orden regresará a reparación y te aparecerá aquí.</p>
+          {% endif %}
+        {% endif %}
+      </div>
+    </section>
+  {% endif %}
+
+  {% if orden.diagnostico or orden.solucion %}
+    <section class="panel">
+      <dl class="ficha ficha-sin-borde ficha-texto">
+        {% if orden.diagnostico %}<div><dt>Diagnóstico</dt><dd>{{ orden.diagnostico|linebreaksbr }}</dd></div>{% endif %}
+        {% if orden.solucion %}<div><dt>Solución aplicada</dt><dd>{{ orden.solucion|linebreaksbr }}</dd></div>{% endif %}
+      </dl>
+    </section>
+  {% endif %}
+
+  <section class="panel">
+    <div class="panel-encabezado"><h3>Registro de la orden</h3></div>
+    {% if puede_gestionar %}
+      <form method="post" action="{% url 'tablero:orden_accion' orden.pk %}" class="panel-cuerpo formulario-linea">
+        {% csrf_token %}<input type="hidden" name="accion" value="nota">
+        <label for="texto-nota" class="sr-only">Agregar avance</label>
+        <input id="texto-nota" name="texto" class="campo" maxlength="2000" placeholder="Agregar un avance: qué se revisó, qué se pidió, qué falta">
+        <button type="submit" class="btn btn-secundario btn-chico">Guardar avance</button>
+      </form>
+    {% endif %}
+    <ol class="registro">
+      {% for a in avances %}
+        <li class="registro-{{ a.tipo|lower }}">
+          <p class="registro-meta">{{ a.creado|date:"d/m/Y H:i" }} · {% if a.autor %}{{ a.autor.get_username }}{% else %}Sistema{% endif %}{% if a.tipo != "NOTA" %} · {{ a.get_tipo_display }}{% endif %}</p>
+          <p>{{ a.texto|linebreaksbr }}</p>
+        </li>
+      {% endfor %}
+    </ol>
+  </section>
+
+  {% if orden.abierta and puede_validar %}
+    <details class="ayuda">
+      <summary>Cancelar esta orden</summary>
+      <form method="post" action="{% url 'tablero:orden_accion' orden.pk %}" class="formulario panel-cuerpo">
+        {% csrf_token %}<input type="hidden" name="accion" value="cancelar">
+        <div class="campo-grupo">
+          <label for="texto-cancelar">Motivo de la cancelación</label>
+          <input id="texto-cancelar" name="texto" class="campo" required maxlength="500" placeholder="Ejemplo: alerta falsa por sensor desconectado">
+        </div>
+        <div><button type="submit" class="btn btn-peligro-borde btn-chico">Cancelar orden</button></div>
+      </form>
+    </details>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}{% if grafica %}
+<script src="{% static 'vendor/chart.umd.js' %}"></script>
+<script src="{% static 'js/orden.js' %}"></script>
+{% endif %}{% endblock %}

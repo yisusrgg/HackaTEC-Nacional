@@ -1,0 +1,9 @@
+{% if etapa == "DIAGNOSTICO" %}
+<span class="etiqueta">Diagnóstico</span>
+{% elif etapa == "REPARACION" %}
+<span class="etiqueta etiqueta-aviso">Reparación</span>
+{% elif etapa == "VALIDACION" %}
+<span class="etiqueta etiqueta-info">Validación</span>
+{% elif etapa == "CERRADA" %}
+<span class="etiqueta etiqueta-ok">Cerrada</span>
+{% else %}<span class="etiqueta etiqueta-apagado">Cancelada</span>{% endif %}

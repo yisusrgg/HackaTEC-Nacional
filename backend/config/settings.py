@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "auditoria",
     "telemetria",
     "tablero",
+    "servicio",
 ]
 
 MIDDLEWARE = [
