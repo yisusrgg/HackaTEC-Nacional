@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import api, views, ordenes, analisis
+from . import api, views, ordenes, analisis, historial
 
 app_name = "tablero"
 
@@ -19,6 +19,8 @@ urlpatterns = [
     path("ordenes/<int:pk>/", ordenes.OrdenView.as_view(), name="orden"),
     path("ordenes/<int:pk>/accion/", ordenes.OrdenAccionView.as_view(), name="orden_accion"),
     path("analisis/", analisis.AnalisisView.as_view(), name="analisis"),
+    path("historial/", historial.HistorialView.as_view(), name="historial"),
+    path("historial/exportar/", historial.ExportarHistorialView.as_view(), name="historial_exportar"),
     path("api/v1/tablero/estado/", api.EstadoView.as_view(), name="api_estado"),
     path("api/v1/tablero/series/<str:codigo>/", api.SerieView.as_view(), name="api_serie"),
 ]

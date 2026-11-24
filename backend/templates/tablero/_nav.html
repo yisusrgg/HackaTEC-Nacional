@@ -10,6 +10,9 @@
     <a href="{% url 'tablero:dispositivos' %}" class="menu-enlace{% if actual == 'dispositivos' %} activo{% endif %}"{% if actual == 'dispositivos' %} aria-current="page"{% endif %}>
       Dispositivos
     </a>
+    <a href="{% url 'tablero:historial' %}" class="menu-enlace{% if actual == 'historial' %} activo{% endif %}"{% if actual == 'historial' %} aria-current="page"{% endif %}>
+      Historial de datos
+    </a>
   <p class="menu-grupo">Servicio</p>
     <a href="{% url 'tablero:ordenes' %}" class="menu-enlace{% if actual == 'ordenes' or actual == 'orden' or actual == 'orden_nueva' %} activo{% endif %}"{% if actual == 'ordenes' or actual == 'orden' or actual == 'orden_nueva' %} aria-current="page"{% endif %}>
       Órdenes de servicio
