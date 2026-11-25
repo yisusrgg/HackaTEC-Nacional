@@ -27,7 +27,7 @@ from telemetria.models import Gateway
 MSG_AC_AMBIENTE, MSG_AC_VENTILADOR = 0x10, 0x11
 MSG_SAN_TANQUE, MSG_SAN_ESTADO, MSG_SAN_FUGA = 0x20, 0x21, 0x22
 MSG_LUZ, MSG_ALIMENTACION, MSG_ESTADO_NODO = 0x30, 0x40, 0xF0
-TANQUE_ALTURA_MM, TANQUE_ZONA_MUERTA_MM = 300, 30
+TANQUE_ALTURA_MM, TANQUE_ZONA_MUERTA_MM = 110, 30  # igual que firmware/nodo_sensores/config_nodo.h
 
 
 def _i16(valor):
