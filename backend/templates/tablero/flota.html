@@ -73,14 +73,14 @@
                     {% else %}<span class="etiqueta etiqueta-apagado">Sin dispositivo</span>{% endif %}
                     <span class="autobus-contacto">{% if a.ultimo_contacto %}Última señal {{ a.ultimo_contacto|naturaltime }}{% else %}Sin datos recibidos{% endif %}</span>
                   </div>
-                  <div class="autobus-alertas">
-                    {% if a.alertas %}
-                      <p class="autobus-alerta">{% include "tablero/_severidad.html" with severidad=a.severidad %} {{ a.alertas }} alerta{{ a.alertas|pluralize }}</p>
-                      <p class="autobus-mensaje">{{ a.alerta_principal.mensaje }}</p>
-                    {% else %}
-                      <p class="autobus-mensaje">Sin alertas activas</p>
-                    {% endif %}
-                  </div>
+                  {% if a.alertas %}
+                    <p class="autobus-alertas" title="{{ a.alertas }} alerta{{ a.alertas|pluralize }} activa{{ a.alertas|pluralize }} · {{ a.alerta_principal.mensaje }}">
+                      {% include "tablero/_severidad.html" with severidad=a.severidad %}
+                      <span class="autobus-mensaje">{% if a.alertas > 1 %}{{ a.alertas }} alertas · {% endif %}{{ a.alerta_principal.mensaje }}</span>
+                    </p>
+                  {% else %}
+                    <p class="autobus-alertas"><span class="etiqueta etiqueta-apagado">Sin alertas</span><span class="autobus-mensaje">Todo en orden</span></p>
+                  {% endif %}
                 </li>
               {% endfor %}
             </ul>
