@@ -1,5 +1,6 @@
 # Secretos y datos locales (NUNCA subir)
 backend/.env
+backend/.venv/
 backend/certs/
 backend/db.sqlite3*
 backend/mysql_crear_bd.sql
