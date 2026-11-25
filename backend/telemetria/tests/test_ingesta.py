@@ -11,7 +11,7 @@ from auditoria.models import EventoSeguridad
 from auditoria.servicios import verificar_cadena
 from telemetria import protocolo
 from telemetria.catalogo import cargar_catalogo
-from telemetria.models import Alerta, Gateway, Medicion, Nodo, Vehiculo
+from telemetria.models import Alerta, Cliente, Gateway, Medicion, Nodo, Vehiculo
 
 T = EventoSeguridad.Tipo
 AMBIENTE = 0x10
@@ -25,7 +25,8 @@ class BaseIngesta(TestCase):
     def setUp(self):
         cache.clear()
         cargar_catalogo()
-        vehiculo = Vehiculo.objects.create(identificador="BUS-T", nombre="Autobús de prueba")
+        cliente = Cliente.objects.create(nombre_comercial="Cliente de prueba")
+        vehiculo = Vehiculo.objects.create(identificador="BUS-T", nombre="Autobús de prueba", cliente=cliente)
         self.gateway = Gateway(vehiculo=vehiculo, identificador="GW-T")
         self.clave_gw = self.gateway.generar_clave()
         self.gateway.save()

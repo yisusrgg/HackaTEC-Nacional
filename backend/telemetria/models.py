@@ -4,6 +4,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
+from django.db.models.functions import Now
 from django.utils import timezone
 
 from .cifrado_campos import cifrar, descifrar
@@ -15,9 +16,60 @@ class Severidad(models.TextChoices):
     CRITICA = "CRITICA", "Crítica"
 
 
+class Cliente(models.Model):
+    """Empresa dueña de una flota de autobuses.
+
+    No tiene CRUD en la plataforma: los clientes se insertan directo en la base (o se importan del sistema de
+    Volvo) y aquí solo se consultan. Por eso los campos opcionales tienen db_default: un INSERT a mano puede
+    omitirlos y la base pone el valor por defecto.
+    """
+
+    class Tipo(models.TextChoices):
+        OPERADOR = "OPERADOR", "Operador de autobuses"
+        DISTRIBUIDOR = "DISTRIBUIDOR", "Distribuidor o franquicia"
+
+    class Segmento(models.TextChoices):
+        FORANEO = "FORANEO", "Foráneo (pasajeros entre ciudades)"
+        URBANO = "URBANO", "Urbano"
+        TURISMO = "TURISMO", "Turismo"
+        PERSONAL = "PERSONAL", "Transporte de personal"
+
+    class Origen(models.TextChoices):
+        MANUAL = "MANUAL", "Insertado directo en la base"
+        IMPORTADO = "IMPORTADO", "Importado del sistema de Volvo"
+        DEMO = "DEMO", "Dato de demostración"
+
+    nombre_comercial = models.CharField(max_length=120, unique=True)
+    razon_social = models.CharField(max_length=200, blank=True, db_default="")
+    rfc = models.CharField("RFC", max_length=13, blank=True, db_default="", validators=[RegexValidator(
+        r"^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$", "RFC no válido: 12 o 13 caracteres en mayúsculas.")])
+    tipo = models.CharField(max_length=12, choices=Tipo.choices, db_default=Tipo.OPERADOR)
+    segmento = models.CharField(max_length=10, choices=Segmento.choices, blank=True, db_default="")
+    estado = models.CharField("estado de la república", max_length=40, blank=True, db_default="")
+    contacto_nombre = models.CharField("nombre del contacto", max_length=120, blank=True, db_default="")
+    contacto_correo = models.EmailField("correo del contacto", blank=True, db_default="")
+    contacto_telefono = models.CharField("teléfono del contacto", max_length=20, blank=True, db_default="")
+    activo = models.BooleanField(db_default=True)
+    origen = models.CharField(max_length=10, choices=Origen.choices, db_default=Origen.MANUAL)
+    id_externo = models.CharField("ID en el sistema de Volvo", max_length=40, unique=True, null=True, blank=True,
+                                  help_text="Se llena al importar clientes desde Volvo; evita duplicarlos.")
+    nota = models.CharField(max_length=255, blank=True, db_default="")
+    creado = models.DateTimeField(db_default=Now(), editable=False)
+
+    class Meta:
+        verbose_name = "cliente"
+        verbose_name_plural = "clientes"
+        ordering = ["nombre_comercial"]
+
+    def __str__(self):
+        return self.nombre_comercial
+
+
 class Vehiculo(models.Model):
     identificador = models.CharField("número económico o VIN", max_length=40, unique=True)
     nombre = models.CharField(max_length=80)
+    cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT, related_name="vehiculos",
+                                help_text="Empresa dueña del autobús. No se puede borrar un cliente que tenga autobuses.")
     creado = models.DateTimeField(auto_now_add=True)
 
     class Meta:

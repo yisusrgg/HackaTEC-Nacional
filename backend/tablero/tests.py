@@ -7,7 +7,7 @@ from django.urls import reverse
 from auditoria.models import EventoSeguridad
 from tablero.roles import ADMINISTRADOR, INGENIERIA, TECNICO, crear_roles
 from telemetria.catalogo import cargar_catalogo
-from telemetria.models import Alerta, Gateway, Nodo, Vehiculo
+from telemetria.models import Alerta, Cliente, Gateway, Nodo, Vehiculo
 
 T = EventoSeguridad.Tipo
 CLAVE = "Prueba-Segura-2026"
@@ -18,7 +18,8 @@ class TableroTests(TestCase):
     def setUpTestData(cls):
         crear_roles()
         cargar_catalogo()
-        vehiculo = Vehiculo.objects.create(identificador="BUS-T", nombre="Prueba")
+        cliente = Cliente.objects.create(nombre_comercial="Cliente de prueba")
+        vehiculo = Vehiculo.objects.create(identificador="BUS-T", nombre="Prueba", cliente=cliente)
         cls.gateway = Gateway(vehiculo=vehiculo, identificador="GW-T")
         cls.gateway.generar_clave()
         cls.gateway.save()

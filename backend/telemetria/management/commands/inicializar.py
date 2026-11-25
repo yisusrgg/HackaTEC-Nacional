@@ -7,7 +7,7 @@ from django.db import transaction
 
 from tablero.roles import ADMINISTRADOR, INGENIERIA, TECNICO, crear_roles
 from telemetria.catalogo import cargar_catalogo
-from telemetria.models import Gateway, Nodo, Vehiculo
+from telemetria.models import Cliente, Gateway, Nodo, Vehiculo
 
 
 class Command(BaseCommand):
@@ -34,7 +34,12 @@ class Command(BaseCommand):
                               "en Tablero → Dispositivos.")
             return
         with transaction.atomic():
-            vehiculo = Vehiculo.objects.create(identificador="BUS-DEMO-001", nombre="Autobús de demostración")
+            cliente, _ = Cliente.objects.get_or_create(
+                nombre_comercial="Cliente de demostración",
+                defaults={"origen": Cliente.Origen.DEMO, "nota": "Dueño de los autobuses de demostración y de prueba."},
+            )
+            vehiculo = Vehiculo.objects.create(identificador="BUS-DEMO-001", nombre="Autobús de demostración",
+                                               cliente=cliente)
             gateway = Gateway(vehiculo=vehiculo, identificador="GW-01")
             clave_gw = gateway.generar_clave()
             gateway.save()
