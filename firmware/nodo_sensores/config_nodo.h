@@ -29,8 +29,8 @@
 #define PIN_LED 2          // LED integrado
 
 // --- Calibración (ajústenla con su maqueta) ---
-#define TANQUE_ALTURA_MM 300.0f        // distancia del sensor al fondo (tanque vacío)
-#define TANQUE_ZONA_MUERTA_MM 30.0f    // distancia del sensor al nivel máximo (tanque lleno)
+#define TANQUE_ALTURA_MM 110.0f        // distancia del sensor al fondo (vacío): recipiente de 11 cm, sensor en el borde
+#define TANQUE_ZONA_MUERTA_MM 30.0f    // distancia del sensor al agua (lleno = 8 cm de agua); el HC-SR04 no mide a menos de 2-3 cm
 #define US_MUESTRAS 5                  // lecturas por medición; se usa la mediana
 #define MARCAS_POR_VUELTA 1            // marcas reflejantes pegadas en el ventilador
 #define RPM_ANTIRREBOTE_US 2000        // ignora pulsos más rápidos (máx. 30 000 rpm con 1 marca)
