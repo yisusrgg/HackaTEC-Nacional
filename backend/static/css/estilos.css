@@ -73,11 +73,19 @@ code { background: var(--bruma); padding: 2px 6px; border-radius: var(--radio); 
 }
 .marca { display: flex; align-items: center; gap: 12px; padding: 20px 20px 16px; text-decoration: none; color: var(--tinta); }
 .marca-logo {
-  width: 30px; height: 30px; flex-shrink: 0;
-  border: 1.5px solid var(--tinta); border-radius: 50%;
-  display: grid; place-items: center;
+  width: 50px;
+  height: 50px;
+  flex-shrink: 0;
+  object-fit: contain;
 }
-.marca-logo::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--tinta); }
+.marca-logo::after { 
+  content: ""; 
+  width: 10px; 
+  height: 10px; 
+  border-radius: 
+  50%; background: 
+  var(--tinta); 
+}
 .marca-nombre { font-family: var(--fuente-titulos); font-weight: 500; font-size: 15px; line-height: 1.2; }
 .marca-sub { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gris); }
 .lateral-pie { border-top: 1px solid var(--linea); padding: 14px 20px; font-size: 12px; color: var(--gris); }
@@ -745,3 +753,27 @@ textarea.campo { resize: vertical; }
 .regresar a:hover .regresar-texto { color: var(--tinta); }
 .regresar a:focus-visible { outline: 2px solid var(--enlace); outline-offset: 4px; }
 .pantalla-encabezado .regresar, .angosto .regresar { margin-bottom: 16px; }
+
+
+
+/* ---------- 29. Resumen de seguridad (arriba de la bitácora) ---------- */
+.indicador-enlace { color: var(--tinta); text-decoration: none; transition: background-color 0.15s; }
+.indicador-enlace:hover { background: var(--niebla); }
+.indicador-activo { background: var(--niebla); box-shadow: inset 0 -2px 0 var(--tinta); }
+.cifra-aviso { color: var(--aviso); }
+.columna { display: grid; gap: 16px; align-content: start; min-width: 0; }
+
+.pendientes { list-style: none; margin: 0; padding: 0; }
+.pendientes li {
+  display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--linea);
+  font-size: 14px;
+  box-shadow: inset 3px 0 0 var(--linea-fuerte);
+}
+.pendientes li:last-child { border-bottom: 0; }
+.pendientes .pendiente-critico { box-shadow: inset 3px 0 0 var(--critico); }
+.pendientes .pendiente-aviso { box-shadow: inset 3px 0 0 var(--aviso); }
+.pendientes .pendiente-info { box-shadow: inset 3px 0 0 var(--enlace); }
+
+.titulo-con-filtro { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }

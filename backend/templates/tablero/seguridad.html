@@ -9,33 +9,75 @@
     <div>
       <p class="rotulo">Registro de solo agregar · encadenado con SHA-256</p>
       <h2 class="titulo-pantalla">Bitácora de seguridad</h2>
+      <p class="introduccion">Arriba, el resumen de las últimas {{ resumen.horas }} horas y lo que falta atender. Abajo, cada evento registrado. Da clic en un indicador para ver solo esos eventos.</p>
     </div>
-    <div class="pantalla-acciones">
-      <span class="contador">{{ page_obj.paginator.count }} eventos</span>
+  </div>
+
+  <div class="indicadores">
+    {% for i in resumen.indicadores %}
+      <a class="indicador indicador-enlace{% if grupo and grupo.clave == i.clave %} indicador-activo{% endif %}" href="?grupo={{ i.clave }}">
+        <p class="rotulo">{{ i.titulo }}</p>
+        <p class="cifra{% if i.nivel == 'critico' %} cifra-critico{% elif i.nivel == 'aviso' %} cifra-aviso{% endif %}">{{ i.total }}</p>
+        <p class="indicador-detalle">{{ i.ayuda }}</p>
+      </a>
+    {% endfor %}
+  </div>
+
+  <div class="dos-columnas">
+    <section class="panel">
+      <div class="panel-encabezado">
+        <h3>Pendientes</h3>
+        {% if resumen.pendientes %}<span class="contador">{{ resumen.pendientes|length }} por revisar</span>{% else %}<span class="etiqueta etiqueta-ok">Al día</span>{% endif %}
+      </div>
+      {% if resumen.pendientes %}
+        <ul class="pendientes">
+          {% for p in resumen.pendientes %}
+            <li class="pendiente-{{ p.nivel }}">
+              <span>{{ p.texto }}</span>
+              <a href="{{ p.enlace }}" class="enlace-discreto">Revisar</a>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="lista-vacia">No hay alertas de seguridad abiertas, claves vencidas ni gateways sin contacto.</p>
+      {% endif %}
+    </section>
+
+    <div class="columna">
+      <div class="cadena{% if not verificacion.integra %} cadena-alterada{% endif %}" role="status">
+        <span class="cadena-icono" aria-hidden="true">{% if verificacion.integra %}✓{% else %}!{% endif %}</span>
+        <div class="cadena-texto">
+          {% if verificacion.integra %}
+            <p class="mensaje-titulo">Bitácora íntegra</p>
+            <p class="secundario">Se verificaron {{ verificacion.revisados }} eventos encadenados con SHA-256: ninguno fue alterado ni eliminado.</p>
+          {% else %}
+            <p class="mensaje-titulo">La bitácora fue alterada</p>
+            <p class="secundario">{{ verificacion.motivo }}{% if verificacion.evento_id %} (evento #{{ verificacion.evento_id }}){% endif %}. Revisa quién tuvo acceso a la base de datos.</p>
+          {% endif %}
+        </div>
+        <a href="{{ request.get_full_path }}" class="btn btn-secundario btn-chico">Verificar de nuevo</a>
+      </div>
+      <dl class="panel ficha ficha-sin-borde">
+        <div><dt>Exportaciones de datos</dt><dd>{{ resumen.exportaciones }}<small>en {{ resumen.horas }} h · cada una con su motivo</small></dd></div>
+        <div><dt>Cambios de usuarios</dt><dd>{{ resumen.cambios_usuarios }}<small>altas, cambios de rol y contraseñas restablecidas</small></dd></div>
+      </dl>
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-encabezado">
+      <div class="titulo-con-filtro">
+        <h3>Registro de eventos</h3>
+        <span class="contador">{{ page_obj.paginator.count }} eventos</span>
+        {% if grupo %}<span class="etiqueta etiqueta-rol">Solo: {{ grupo.titulo }}</span> <a href="?{% if severidad %}severidad={{ severidad }}{% endif %}" class="enlace-discreto">Quitar filtro</a>{% endif %}
+      </div>
       <nav class="segmentado" aria-label="Filtrar por severidad">
-        <a href="?"{% if not severidad %} class="activo" aria-current="page"{% endif %}>Todos</a>
+        <a href="?{% if grupo %}grupo={{ grupo.clave }}{% endif %}"{% if not severidad %} class="activo" aria-current="page"{% endif %}>Todos</a>
         {% for valor, etiqueta in severidades %}
-          <a href="?severidad={{ valor }}"{% if severidad == valor %} class="activo" aria-current="page"{% endif %}>{{ etiqueta }}</a>
+          <a href="?severidad={{ valor }}{% if grupo %}&amp;grupo={{ grupo.clave }}{% endif %}"{% if severidad == valor %} class="activo" aria-current="page"{% endif %}>{{ etiqueta }}</a>
         {% endfor %}
       </nav>
     </div>
-  </div>
-
-  <div class="cadena{% if not verificacion.integra %} cadena-alterada{% endif %}" role="status">
-    <span class="cadena-icono" aria-hidden="true">{% if verificacion.integra %}✓{% else %}!{% endif %}</span>
-    <div class="cadena-texto">
-      {% if verificacion.integra %}
-        <p class="mensaje-titulo">Bitácora íntegra</p>
-        <p class="secundario">Se verificaron {{ verificacion.revisados }} eventos encadenados con SHA-256: ninguno fue alterado ni eliminado.</p>
-      {% else %}
-        <p class="mensaje-titulo">La bitácora fue alterada</p>
-        <p class="secundario">{{ verificacion.motivo }}{% if verificacion.evento_id %} (evento #{{ verificacion.evento_id }}){% endif %}. Revisa quién tuvo acceso a la base de datos.</p>
-      {% endif %}
-    </div>
-    <a href="{{ request.get_full_path }}" class="btn btn-secundario btn-chico">Verificar de nuevo</a>
-  </div>
-
-  <div class="panel">
     <div class="tabla-contenedor">
       <table class="tabla">
         <thead>
@@ -66,7 +108,7 @@
         </tbody>
       </table>
     </div>
-  </div>
+  </section>
 
   {% include "tablero/_paginacion.html" %}
 </div>

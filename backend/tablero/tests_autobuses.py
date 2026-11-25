@@ -3,7 +3,7 @@ from django.contrib.auth.models import Group
 from django.test import TestCase
 from django.urls import reverse
 
-from tablero.roles import ADMINISTRADOR, TECNICO, crear_roles
+from tablero.roles import ADMINISTRADOR, INGENIERIA, TECNICO, crear_roles
 from tablero.tests_flota import alerta, autobus
 from telemetria.catalogo import cargar_catalogo
 from telemetria.models import Cliente, Severidad, Vehiculo
@@ -28,6 +28,8 @@ class AutobusesTests(TestCase):
         cls.tecnico.groups.add(Group.objects.get(name=TECNICO))
         cls.admin = Usuario.objects.create_user("adm", password="x")
         cls.admin.groups.add(Group.objects.get(name=ADMINISTRADOR))
+        cls.ingeniero = Usuario.objects.create_user("ing", password="x")
+        cls.ingeniero.groups.add(Group.objects.get(name=INGENIERIA))
 
     def setUp(self):
         self.client.force_login(self.tecnico)

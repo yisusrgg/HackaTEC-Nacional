@@ -53,7 +53,7 @@ class TableroTests(TestCase):
         self.assertEqual(respuesta.headers["X-Frame-Options"], "DENY")
 
     def test_paginas_principales_cargan(self):
-        self.entrar("admin")
+        self.entrar("ingeniero")
         for url in [reverse("tablero:resumen"), reverse("tablero:monitoreo", args=[self.gateway.vehiculo_id]),
                     reverse("tablero:alertas"), reverse("tablero:autobuses"),
                     reverse("tablero:seguridad"), reverse("tablero:senal", args=["ac.temperatura"])]:
@@ -77,12 +77,12 @@ class TableroTests(TestCase):
         self.assertIn("fecha_utc", b"".join(respuesta.streaming_content).decode())
         self.assertTrue(EventoSeguridad.objects.filter(tipo=T.EXPORTACION, actor="ingeniero").exists())
 
-    def test_admin_ve_la_bitacora_integra(self):
-        self.entrar("admin")
+    def test_ingenieria_ve_la_bitacora_integra(self):
+        self.entrar("ingeniero")
         self.assertContains(self.client.get(reverse("tablero:seguridad")), "Bitácora íntegra")
 
     def test_rotar_clave_de_nodo(self):
-        self.entrar("admin")
+        self.entrar("ingeniero")
         respuesta = self.client.post(reverse("tablero:rotar_clave", args=["nodo", self.nodo.pk]))
         self.assertEqual(respuesta.status_code, 200)
         self.nodo.refresh_from_db()
@@ -94,19 +94,19 @@ class TableroTests(TestCase):
         self.assertNotIn(clave, str(evento.detalle))  # la clave nunca va a la bitácora
 
     def test_rotar_clave_del_gateway_cambia_la_epoca(self):
-        self.entrar("admin")
+        self.entrar("ingeniero")
         self.client.post(reverse("tablero:rotar_clave", args=["gateway", self.gateway.pk]))
         self.gateway.refresh_from_db()
         self.assertEqual(self.gateway.epoca, 2)
         self.assertIsNone(self.gateway.ultimo_lote)
 
-    def test_ingeniero_no_rota_claves(self):
-        self.entrar("ingeniero")
+    def test_admin_no_rota_claves(self):
+        self.entrar("admin")
         respuesta = self.client.post(reverse("tablero:rotar_clave", args=["nodo", self.nodo.pk]))
         self.assertEqual(respuesta.status_code, 403)
 
     def test_revocar_nodo(self):
-        self.entrar("admin")
+        self.entrar("ingeniero")
         self.client.post(reverse("tablero:cambiar_estado", args=["nodo", self.nodo.pk]))
         self.nodo.refresh_from_db()
         self.assertFalse(self.nodo.activo)

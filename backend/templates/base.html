@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block titulo %}Tablero{% endblock %} · Carrocería Conectada</title>
+  <title>{% block titulo %}Tablero{% endblock %} · buService</title>
   <link rel="stylesheet" href="{% static 'css/estilos.css' %}">
 </head>
 <body>
@@ -11,10 +11,10 @@
   <div class="app">
     <aside class="lateral">
       <a class="marca" href="{% url 'tablero:resumen' %}">
-        <span class="marca-logo" aria-hidden="true"></span>
+        <img class="marca-logo" src="{% static 'img/volvo-logo.avif' %}" alt="">
         <span>
-          <span class="marca-nombre">Carrocería Conectada</span><br>
-          <span class="marca-sub">Telemetría de flota</span>
+          <span class="marca-nombre">buService</span><br>
+          <span class="marca-sub">Volvo Buses</span>
         </span>
       </a>
       <nav class="menu" aria-label="Principal">

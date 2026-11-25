@@ -10,8 +10,6 @@ ROLES = {
         "telemetria.ver_tablero",
         "telemetria.exportar_datos",
         "telemetria.atender_alerta",
-        "telemetria.gestionar_dispositivos",
-        "auditoria.ver_auditoria",
         "servicio.view_ordenservicio",
         "servicio.ver_analisis",
         # Para administrar desde el panel de Django (umbrales, vehículos, usuarios):
@@ -29,9 +27,12 @@ ROLES = {
         "auth.change_user",
         "auth.view_group",
     ],
-    INGENIERIA: [
+        INGENIERIA: [
         "telemetria.ver_tablero",
         "telemetria.exportar_datos",
+        "auditoria.ver_auditoria",
+        "telemetria.gestionar_dispositivos",
+        "telemetria.atender_alerta",
         "servicio.gestionar_ordenes",
         "servicio.validar_ordenes",
         "servicio.ver_analisis",

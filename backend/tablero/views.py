@@ -15,6 +15,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
 from django.views.generic import DetailView, ListView, TemplateView
 
+from auditoria import resumen as resumen_seguridad
 from auditoria.models import EventoSeguridad
 from auditoria.servicios import registrar, verificar_cadena
 from auditoria.utils import ip_de
@@ -206,6 +207,8 @@ class AtenderAlertaView(VistaProtegida, View):
 
 
 class SeguridadView(VistaProtegida, ListView):
+    """Bitácora de seguridad con un resumen arriba: indicadores de las últimas 24 h y pendientes."""
+
     permission_required = "auditoria.ver_auditoria"
     template_name = "tablero/seguridad.html"
     context_object_name = "eventos"
@@ -216,14 +219,18 @@ class SeguridadView(VistaProtegida, ListView):
         self.severidad = self.request.GET.get("severidad", "")
         if self.severidad in Sev.values:
             consulta = consulta.filter(severidad=self.severidad)
+        self.grupo = resumen_seguridad.GRUPOS_POR_CLAVE.get(self.request.GET.get("grupo", ""))
+        if self.grupo:
+            consulta = consulta.filter(tipo__in=self.grupo["tipos"])
         return consulta
 
     def get_context_data(self, **kwargs):
         contexto = super().get_context_data(**kwargs)
+        parametros = [f"severidad={self.severidad}" if self.severidad else "", f"grupo={self.grupo['clave']}" if self.grupo else ""]
         contexto.update(verificacion=verificar_cadena(), severidad=self.severidad, severidades=Sev.choices,
-                        parametros=f"severidad={self.severidad}" if self.severidad else "")
+                        grupo=self.grupo, resumen=resumen_seguridad.calcular(),
+                        parametros="&".join(p for p in parametros if p))
         return contexto
-
 
 def _dispositivo(tipo, pk, bloquear=False):
     modelos = {"gateway": Gateway, "nodo": Nodo}
