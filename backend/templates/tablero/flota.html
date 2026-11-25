@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% load static humanize %}
-{% block titulo %}Resumen{% endblock %}
-{% block encabezado %}Resumen de la flota{% endblock %}
+{% block titulo %}Flota por operador{% endblock %}
+{% block encabezado %}Flota por operador{% endblock %}
 
 {% block contenido %}
 <div class="pantalla">
   <div class="pantalla-encabezado">
     <div>
       <p class="rotulo">Clientes y autobuses</p>
-      <h2 class="titulo-pantalla">Resumen de la flota</h2>
+      <h2 class="titulo-pantalla">Flota por operador</h2>
     </div>
     <div class="pantalla-acciones">
       <span class="en-vivo">Actualizado {% now "H:i" %}</span>

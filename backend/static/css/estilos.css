@@ -112,10 +112,9 @@ code { background: var(--bruma); padding: 2px 6px; border-radius: var(--radio); 
 .menu {
   flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
   display: grid; align-content: start; gap: 2px; padding: 8px 10px 16px;
-  scrollbar-width: thin; scrollbar-color: var(--linea-fuerte) transparent;
+  scrollbar-width: none; /* se desplaza con la rueda o el touchpad, sin barra visible */
 }
-.menu::-webkit-scrollbar { width: 6px; }
-.menu::-webkit-scrollbar-thumb { background: var(--linea-fuerte); border-radius: 3px; }
+.menu::-webkit-scrollbar { display: none; }
 .marca, .lateral-pie { flex-shrink: 0; }
 .menu-grupo { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gris); padding: 14px 10px 6px; }
 .menu-enlace {
