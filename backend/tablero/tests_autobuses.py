@@ -28,6 +28,7 @@ class AutobusesTests(TestCase):
         cls.tecnico.groups.add(Group.objects.get(name=TECNICO))
         cls.admin = Usuario.objects.create_user("adm", password="x")
         cls.admin.groups.add(Group.objects.get(name=ADMINISTRADOR))
+        # Ingeniería es quien gestiona los dispositivos (generar clave, revocar).
         cls.ingeniero = Usuario.objects.create_user("ing", password="x")
         cls.ingeniero.groups.add(Group.objects.get(name=INGENIERIA))
 
@@ -147,14 +148,14 @@ class AutobusesTests(TestCase):
         self.assertNotContains(self.client.get(reverse("tablero:autobuses")), "data-regresar")
 
     def test_revocar_regresa_a_la_misma_lista_filtrada(self):
-        self.client.force_login(self.admin)
+        self.client.force_login(self.ingeniero)
         siguiente = reverse("tablero:autobuses") + f"?cliente={self.dos.pk}"
         respuesta = self.client.post(reverse("tablero:cambiar_estado", args=["nodo", self.nodo_tranquilo.pk]),
                                      {"siguiente": siguiente})
         self.assertRedirects(respuesta, siguiente)
 
     def test_revocar_no_redirige_fuera_del_sitio(self):
-        self.client.force_login(self.admin)
+        self.client.force_login(self.ingeniero)
         respuesta = self.client.post(reverse("tablero:cambiar_estado", args=["nodo", self.nodo_tranquilo.pk]),
                                      {"siguiente": "https://ejemplo.com/"})
         self.assertRedirects(respuesta, reverse("tablero:autobuses"))

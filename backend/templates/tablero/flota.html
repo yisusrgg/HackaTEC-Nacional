@@ -9,7 +9,6 @@
     <div>
       <p class="rotulo">Clientes y autobuses</p>
       <h2 class="titulo-pantalla">Resumen de la flota</h2>
-      <p class="introduccion">Por cada cliente se muestran primero los autobuses en línea con alertas activas. La página se actualiza cada 30 segundos.</p>
     </div>
     <div class="pantalla-acciones">
       <span class="en-vivo">Actualizado {% now "H:i" %}</span>
@@ -30,7 +29,6 @@
     <div class="indicador">
       <p class="rotulo">En línea ahora</p>
       <p class="cifra">{{ totales.en_linea }} <small>de {{ totales.autobuses }}</small></p>
-      <p class="indicador-detalle">enviaron datos hace menos de 30 s</p>
     </div>
     <div class="indicador">
       <p class="rotulo">Con alertas activas</p>
