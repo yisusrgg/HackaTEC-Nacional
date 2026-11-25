@@ -94,6 +94,9 @@ def actualizar(orden, ahora=None):
             orden.save(update_fields=["etapa", "resultado", "cerrada_en", "actualizada"])
             orden.anotar(f"Validada automáticamente: {resultado.texto}", tipo=AvanceOrden.Tipo.SISTEMA)
             orden.resolver_alerta()
+            from confiabilidad.servicios import confirmar_falla  # aquí para evitar una importación circular
+
+            confirmar_falla(orden)  # la falla de la pieza cuenta en los análisis (salvo que falte aprobarla)
     return resultado
 
 

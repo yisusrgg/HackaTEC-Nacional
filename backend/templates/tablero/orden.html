@@ -8,10 +8,15 @@
   <div class="pantalla-encabezado">
     <div>
       {% url 'tablero:ordenes' as destino %}{% include "tablero/_regresar.html" with destino=destino %}
-      <p class="rotulo espacio-arriba">{{ orden.vehiculo }}</p>
+      <p class="rotulo espacio-arriba"><a href="{% url 'tablero:ficha' orden.vehiculo_id %}" class="mono">{{ orden.vehiculo.identificador }}</a> · {{ orden.vehiculo.cliente.nombre_comercial }}</p>
       <h2 class="titulo-pantalla">{{ orden.titulo }} <small class="mono">{{ orden.folio }}</small></h2>
     </div>
-    <div class="pantalla-acciones">{% include "tablero/_etapa.html" with etapa=orden.etapa %}</div>
+    <div class="pantalla-acciones">
+      {% if orden.aprobacion == "PENDIENTE" %}<span class="etiqueta etiqueta-aviso">Por validar por Ingeniería</span>
+      {% elif orden.aprobacion == "APROBADA" %}<span class="etiqueta etiqueta-ok">Aprobada por Ingeniería</span>
+      {% elif orden.aprobacion == "DEVUELTA" %}<span class="etiqueta etiqueta-critico">Devuelta al técnico</span>{% endif %}
+      {% include "tablero/_etapa.html" with etapa=orden.etapa %}
+    </div>
   </div>
 
   {% if orden.etapa == "CANCELADA" %}
@@ -31,6 +36,53 @@
         <b>Cierre</b><span>{% if orden.cerrada_en %}{{ orden.get_resultado_display }} · {{ orden.cerrada_en|date:"d/m H:i" }}{% else %}pendiente{% endif %}</span>
       </li>
     </ol>
+  {% endif %}
+
+  {% if orden.aprobacion == "PENDIENTE" and puede_validar %}
+    <section class="panel panel-destacado">
+      <div class="panel-encabezado"><h3>Revisión de Ingeniería</h3><span class="secundario texto-chico">lo registró un técnico de convenio; la falla cuenta en los análisis hasta que lo apruebes</span></div>
+      <div class="panel-cuerpo dos-campos">
+        <form method="post" action="{% url 'tablero:orden_accion' orden.pk %}" class="formulario">
+          {% csrf_token %}<input type="hidden" name="accion" value="aprobar">
+          <div class="campo-grupo"><label for="texto-aprobar">Comentario (opcional)</label><input id="texto-aprobar" name="texto" class="campo" maxlength="500"></div>
+          <div><button type="submit" class="btn btn-primario btn-chico">Aprobar</button></div>
+        </form>
+        <form method="post" action="{% url 'tablero:orden_accion' orden.pk %}" class="formulario">
+          {% csrf_token %}<input type="hidden" name="accion" value="devolver">
+          <div class="campo-grupo"><label for="texto-devolver">Qué debe corregir</label><input id="texto-devolver" name="texto" class="campo" maxlength="500" required></div>
+          <div><button type="submit" class="btn btn-peligro-borde btn-chico">Devolver al técnico</button></div>
+        </form>
+      </div>
+    </section>
+  {% elif orden.aprobacion == "PENDIENTE" %}
+    <div class="mensaje mensaje-aviso">Ingeniería revisará lo que registraste antes de que la falla cuente en los análisis.</div>
+  {% elif orden.aprobacion == "DEVUELTA" and orden.abierta %}
+    <div class="mensaje mensaje-error">Ingeniería devolvió la orden: revisa su comentario en el registro de abajo y vuelve a registrar la reparación.</div>
+  {% endif %}
+
+  {% if diagnostico_sistema %}
+    <section class="panel">
+      <div class="panel-encabezado">
+        <h3>Diagnóstico del sistema</h3>
+        <span>{% include "tablero/_certeza.html" with certeza=certeza_sistema %}
+          {% if orden.diagnostico_confirmado is True %}<span class="etiqueta etiqueta-ok">El técnico lo confirmó</span>{% elif orden.diagnostico_confirmado is False %}<span class="etiqueta etiqueta-critico">El técnico lo rechazó</span>{% endif %}</span>
+      </div>
+      <div class="panel-cuerpo formulario">
+        <p>{{ diagnostico_sistema }}</p>
+        {% if orden.diagnostico_confirmado is None and orden.abierta and puede_gestionar %}
+          <form method="post" action="{% url 'tablero:orden_accion' orden.pk %}" class="formulario-linea formulario-sin-borde">
+            {% csrf_token %}<input type="hidden" name="accion" value="diagnostico">
+            <button type="submit" name="respuesta" value="confirmar" class="btn btn-secundario btn-chico">Confirmar</button>
+            <label for="causa-real" class="sr-only">Causa real</label>
+            <select id="causa-real" name="causa" class="campo">
+              <option value="">Si lo rechazas, elige la causa real…</option>
+              {% for c in causas %}<option value="{{ c.pk }}">{{ c.nombre }}</option>{% endfor %}
+            </select>
+            <button type="submit" name="respuesta" value="rechazar" class="btn btn-peligro-borde btn-chico">Rechazar</button>
+          </form>
+        {% endif %}
+      </div>
+    </section>
   {% endif %}
 
   <div class="dos-columnas">
@@ -67,7 +119,9 @@
     <section class="panel">
       <div class="panel-encabezado"><h3>Datos de la orden</h3></div>
       <dl class="ficha ficha-sin-borde ficha-columna">
-        <div><dt>Unidad</dt><dd>{{ orden.vehiculo }}</dd></div>
+        <div><dt>Unidad</dt><dd><a href="{% url 'tablero:ficha' orden.vehiculo_id %}">{{ orden.vehiculo }}</a></dd></div>
+        <div><dt>Componente</dt><dd>{% if orden.componente %}<a href="{% url 'tablero:componente' orden.componente_id %}">{{ orden.componente.tipo.nombre }}</a><small>serie {{ orden.componente.numero_serie|default:"—" }}</small>{% else %}—{% endif %}</dd></div>
+        <div><dt>Causa</dt><dd>{{ orden.causa|default:"—" }}</dd></div>
         <div><dt>Nodo</dt><dd>{{ orden.nodo|default:"—" }}</dd></div>
         <div><dt>Responsable</dt><dd>{% if orden.responsable %}{{ orden.responsable.get_full_name|default:orden.responsable.get_username }}{% else %}Sin asignar{% endif %}</dd></div>
         <div><dt>Abierta por</dt><dd>{{ orden.creada_por.get_username|default:"—" }}<small>{{ orden.creada|date:"d/m/Y H:i" }}</small></dd></div>
@@ -96,6 +150,36 @@
               <label for="texto-solucion">Solución aplicada</label>
               <textarea id="texto-solucion" name="texto" rows="3" class="campo" required placeholder="Qué se hizo, refacciones usadas y mediciones"></textarea>
             </div>
+            <div class="dos-campos">
+              <div class="campo-grupo">
+                <label for="causa-reparacion">Causa de la falla</label>
+                <select id="causa-reparacion" name="causa" class="campo" required>
+                  <option value="">Elige del catálogo…</option>
+                  {% for c in causas %}<option value="{{ c.pk }}"{% if orden.causa_id == c.pk %} selected{% endif %}>{{ c.nombre }}</option>{% endfor %}
+                </select>
+              </div>
+              <div class="campo-grupo">
+                <label for="componente-reparacion">Componente afectado</label>
+                {% if orden.componente %}
+                  <p class="campo campo-fijo">{{ orden.componente.tipo.nombre }} · {{ orden.componente.porcentaje_vida|floatformat:0 }} % de vida</p>
+                {% else %}
+                  <select id="componente-reparacion" name="componente" class="campo">
+                    <option value="">Ninguno (no se cambió pieza)</option>
+                    {% for c in componentes %}<option value="{{ c.pk }}">{{ c.tipo.nombre }} · {{ c.porcentaje_vida|floatformat:0 }} % de vida</option>{% endfor %}
+                  </select>
+                {% endif %}
+              </div>
+            </div>
+            {% if not falla %}
+              <div class="dos-campos">
+                <label class="casilla"><input type="checkbox" name="reemplazo" value="1"> Se cambió la pieza por una nueva</label>
+                <div class="campo-grupo">
+                  <label for="serie-nueva">Número de serie de la pieza nueva</label>
+                  <input id="serie-nueva" name="serie_nueva" class="campo" maxlength="60">
+                </div>
+              </div>
+              <p class="secundario texto-chico">Si se cambió la pieza, sus ciclos u horas quedan como su vida a la falla y la nueva empieza a contar desde cero.</p>
+            {% endif %}
             <p class="secundario">{% if orden.tiene_criterio %}Al registrarla empieza la validación de {{ orden.get_minutos_validacion_display }}: si {{ orden.senal.nombre|lower }} se mantiene dentro de sus umbrales, la orden se cierra sola.{% else %}Esta orden no tiene señal para validar con datos: después de registrarla, Ingeniería la valida manualmente.{% endif %}</p>
             <div><button type="submit" class="btn btn-primario">Registrar reparación e iniciar validación</button></div>
           </form>
@@ -115,6 +199,23 @@
           {% endif %}
         {% endif %}
       </div>
+    </section>
+  {% endif %}
+
+  {% if falla %}
+
+    <section class="panel">
+      <div class="panel-encabezado">
+        <h3>Falla registrada</h3>
+        <span>{% if falla.prematura %}<span class="etiqueta etiqueta-critico">Falla prematura</span>{% else %}<span class="etiqueta">{{ falla.get_momento_display }}</span>{% endif %}
+          {% if falla.confirmada %}<span class="etiqueta etiqueta-ok">Cuenta en los análisis</span>{% else %}<span class="etiqueta etiqueta-apagado">Cuenta al cerrar{% if orden.aprobacion == "PENDIENTE" %} y aprobar{% endif %}</span>{% endif %}</span>
+      </div>
+      <dl class="ficha ficha-sin-borde">
+        <div><dt>Pieza retirada</dt><dd><a href="{% url 'tablero:componente' falla.componente_id %}">{{ falla.componente.tipo.nombre }}</a><small>serie {{ falla.componente.numero_serie|default:"—" }}</small></dd></div>
+        <div><dt>Ciclos u horas al fallar</dt><dd>{{ falla.uso_al_fallar|floatformat:0|intcomma }} {{ falla.componente.tipo.unidad_texto }}<small>{{ falla.porcentaje_garantia|floatformat:0 }} % de {{ falla.componente.tipo.vida_garantizada|intcomma }} garantizados</small></dd></div>
+        <div><dt>Causa</dt><dd>{{ falla.causa|default:"—" }}</dd></div>
+        <div><dt>Pieza nueva</dt><dd>{% if falla.reemplazo %}<a href="{% url 'tablero:componente' falla.reemplazo_id %}" class="mono">{{ falla.reemplazo.numero_serie|default:"sin serie" }}</a><small>empieza en cero</small>{% else %}—{% endif %}</dd></div>
+      </dl>
     </section>
   {% endif %}
 

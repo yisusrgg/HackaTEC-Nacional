@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block titulo %}Catálogo de componentes{% endblock %}
+{% block encabezado %}Catálogo de componentes{% endblock %}
+
+{% block contenido %}
+<div class="pantalla">
+  <div class="pantalla-encabezado">
+    <div>
+      <p class="rotulo">Contra qué se compara cada pieza</p>
+      <h2 class="titulo-pantalla">Catálogo de componentes</h2>
+    </div>
+    <div class="pantalla-acciones"><a href="{% url 'tablero:catalogo_nuevo' %}" class="btn btn-primario btn-chico">Nuevo tipo</a></div>
+  </div>
+
+  <div class="tabla-contenedor">
+    <table class="tabla">
+      <thead>
+        <tr><th>Componente</th><th>Subsistema</th><th>Fabricante</th><th class="numeros">Vida garantizada</th><th class="numeros">Prematura antes de</th><th>Conteo</th><th class="numeros">Instalados</th><th><span class="sr-only">Acciones</span></th></tr>
+      </thead>
+      <tbody>
+        {% for t in tipos %}
+          <tr{% if not t.activo %} class="fila-inactiva"{% endif %}>
+            <td><b>{{ t.nombre }}</b><small class="bloque secundario mono">{{ t.codigo }}</small></td>
+            <td>{{ t.get_subsistema_display }}</td>
+            <td>{{ t.fabricante|default:"—" }}<small class="bloque secundario">{{ t.modelo }}</small></td>
+            <td class="numeros">{{ t.vida_garantizada|intcomma }} {{ t.unidad_texto }}</td>
+            <td class="numeros">{{ t.limite_prematura }} %</td>
+            <td>{% if t.medicion == "MEDIDO" %}<span class="etiqueta etiqueta-ok">Medido</span>{% else %}<span class="etiqueta etiqueta-apagado">Estimado</span>{% endif %}<small class="bloque secundario">{{ t.get_regla_display }}</small></td>
+            <td class="numeros">{{ t.en_uso }}</td>
+            <td class="derecha"><a href="{% url 'tablero:catalogo_editar' t.pk %}" class="btn btn-texto btn-chico">Editar</a></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8" class="lista-vacia">El catálogo está vacío. Ejecuta <code>python manage.py inicializar</code> o agrega un tipo.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

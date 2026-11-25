@@ -1,0 +1,103 @@
+{% load humanize %}{% comment %}Gateways y nodos de una unidad, con sus acciones (pestaña Dispositivos de la ficha).{% endcomment %}
+<section class="panel">
+{% for gw in gateways %}
+  <div class="panel-subtitulo gateway-encabezado">
+    <div>
+      <div class="dispositivo-titulo">
+        <p class="rotulo">Gateway <span class="mono">{{ gw.identificador }}</span></p>
+        {% if not gw.activo %}<span class="etiqueta etiqueta-critico">Acceso revocado</span>
+        {% elif gw.en_linea %}<span class="etiqueta etiqueta-ok">En línea</span>
+        {% else %}<span class="etiqueta etiqueta-apagado">Sin contacto</span>{% endif %}
+      </div>
+      <p class="dispositivo-descripcion">ESP32 #2 · recibe las lecturas de sus nodos y las envía al servidor por HTTPS</p>
+    </div>
+    {% if puede_gestionar %}
+      <div class="acciones">
+        <form method="post" action="{% url 'tablero:rotar_clave' 'gateway' gw.pk %}"
+              data-confirmar="Se generará una clave nueva para el gateway {{ gw.identificador }}. La clave actual deja de servir y tendrás que cargar la nueva en el ESP32 #2 por el monitor serie. ¿Continuar?">
+          {% csrf_token %}<button type="submit" class="btn btn-secundario btn-chico">Generar clave nueva</button>
+        </form>
+        <form method="post" action="{% url 'tablero:cambiar_estado' 'gateway' gw.pk %}"
+              data-confirmar="{% if gw.activo %}El gateway {{ gw.identificador }} ya no podrá enviar datos y se rechazará todo lo que mande. ¿Revocar su acceso?{% else %}El gateway {{ gw.identificador }} podrá volver a enviar datos. ¿Restaurar su acceso?{% endif %}">
+          {% csrf_token %}<input type="hidden" name="siguiente" value="{{ request.get_full_path }}">
+          <button type="submit" class="btn btn-chico {% if gw.activo %}btn-peligro-borde{% else %}btn-primario{% endif %}">{% if gw.activo %}Revocar acceso{% else %}Restaurar acceso{% endif %}</button>
+        </form>
+      </div>
+    {% endif %}
+  </div>
+
+  <dl class="ficha">
+    <div>
+      <dt>Último contacto</dt>
+      <dd>{{ gw.ultimo_contacto|naturaltime|default:"nunca" }}<small>último envío recibido</small></dd>
+    </div>
+    <div>
+      <dt>Último lote</dt>
+      <dd>{{ gw.ultimo_lote|default_if_none:"—" }}<small>los paquetes van numerados para evitar repeticiones</small></dd>
+    </div>
+    <div>
+      <dt>Firmware</dt>
+      <dd class="mono">{{ gw.firmware|default:"—" }}<small>versión que reporta el equipo</small></dd>
+    </div>
+    <div>
+      <dt>Clave generada</dt>
+      <dd>{{ gw.clave_actualizada|date:"d/m/Y H:i"|default:"—" }}<small>época {{ gw.epoca }} · sube con cada clave nueva</small></dd>
+    </div>
+    {% if gw.estado %}
+      <div><dt>Wi-Fi</dt><dd>{{ gw.estado.rssi|default:"—" }} dBm<small>intensidad de la señal</small></dd></div>
+      <div><dt>Estado CAN</dt><dd>{{ gw.estado.can_estado|default:"—" }}<small>bus interno con los nodos</small></dd></div>
+      <div><dt>Errores RX / TX</dt><dd>{{ gw.estado.can_err_rx|default_if_none:"—" }} / {{ gw.estado.can_err_tx|default_if_none:"—" }}<small>al recibir / al enviar</small></dd></div>
+      <div><dt>Errores de bus</dt><dd>{{ gw.estado.can_bus_err|default_if_none:"—" }}</dd></div>
+      <div><dt>Lotes en cola</dt><dd>{{ gw.estado.cola|default_if_none:"—" }}<small>guardados sin red, por reenviar</small></dd></div>
+      <div><dt>Descartados</dt><dd>{{ gw.estado.descartados|default_if_none:"—" }}<small>la cola se llenó</small></dd></div>
+    {% endif %}
+  </dl>
+
+  <div class="panel-subtitulo">
+    <p class="rotulo">Nodos de sensores de este gateway</p>
+    <p class="dispositivo-descripcion">ESP32 #1 · leen los sensores y firman cada lectura con su propia clave</p>
+  </div>
+  <div class="tabla-contenedor">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Nodo</th>
+          <th>Estado</th>
+          <th class="numeros" title="Número de la última trama recibida; nunca debe repetirse">Contador</th>
+          <th class="numeros" title="Tramas aceptadas">Recibidas</th>
+          <th class="numeros" title="Tramas que no llegaron">Pérdida</th>
+          <th class="numeros" title="Tramas con firma inválida o repetidas">Rechazadas</th>
+          <th class="numeros" title="Veces que el nodo se reinició">Reinicios</th>
+          <th>Último contacto</th>
+          {% if puede_gestionar %}<th><span class="sr-only">Acciones</span></th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for n in gw.nodos.all %}
+          <tr>
+            <td class="nombre-dispositivo">{{ n }}</td>
+            <td>
+              {% if not n.activo %}<span class="etiqueta etiqueta-critico">Acceso revocado</span>
+              {% elif n.en_linea %}<span class="etiqueta etiqueta-ok">En línea</span>
+              {% else %}<span class="etiqueta etiqueta-apagado">Sin datos</span>{% endif %}
+            </td>
+            <td class="numeros">{{ n.ultimo_contador|default_if_none:"—" }}</td>
+            <td class="numeros">{{ n.tramas_recibidas|intcomma }}</td>
+            <td class="numeros">{{ n.porcentaje_perdida }} %</td>
+            <td class="numeros">{{ n.tramas_rechazadas|intcomma }}</td>
+            <td class="numeros">{{ n.reinicios }}</td>
+            <td class="secundario">{{ n.ultimo_contacto|naturaltime|default:"nunca" }}</td>
+            {% if puede_gestionar %}
+              <td class="derecha">{% include "tablero/_acciones_dispositivo.html" with tipo="nodo" d=n %}</td>
+            {% endif %}
+          </tr>
+        {% empty %}
+          <tr><td colspan="9" class="lista-vacia">Este gateway no tiene nodos.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% empty %}
+  <p class="lista-vacia">Esta unidad todavía no tiene un gateway registrado.</p>
+{% endfor %}
+</section>

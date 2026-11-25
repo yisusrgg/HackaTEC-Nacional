@@ -1,23 +1,22 @@
 {% extends "base.html" %}
 {% load static humanize %}
 {% block titulo %}Monitoreo {{ vehiculo.identificador }}{% endblock %}
-{% block encabezado %}Monitoreo en tiempo real{% endblock %}
+{% block encabezado %}Ficha de la unidad{% endblock %}
 
 {% block contenido %}
-{% url 'tablero:autobuses' as destino %}{% include "tablero/_regresar.html" with destino=destino %}
+<div class="pantalla">
+{% include "tablero/_ficha_encabezado.html" %}
 {% if not nodo %}
   <div class="panel vacio">
     <h2>{{ vehiculo.identificador }} aún no tiene nodos de sensores</h2>
     <p>Registra su gateway y sus nodos para ver sus lecturas en vivo.</p>
   </div>
 {% else %}
-<div class="pantalla">
   <div id="aviso-conexion" class="mensaje mensaje-aviso" hidden>No se pudo actualizar el tablero; reintentando…</div>
 
   <div class="pantalla-encabezado">
     <div>
-      <p class="rotulo">{{ vehiculo.cliente.nombre_comercial }} · {{ vehiculo.nombre }}</p>
-      <h2 class="titulo-pantalla"><span class="mono">{{ vehiculo.identificador }}</span> <small>· {{ nodo.nombre }} · nodo {{ nodo.numero }}</small></h2>
+      <p class="rotulo">Lecturas en vivo · {{ nodo.nombre }} · nodo {{ nodo.numero }}</p>
     </div>
     <div class="pantalla-acciones">
       {% if nodos|length > 1 %}
@@ -32,6 +31,7 @@
     </div>
   </div>
 
+  {% if indicadores_tecnicos %}
   <div class="indicadores">
     <div class="indicador">
       <p class="rotulo">Gateway {{ nodo.gateway.identificador }}</p>
@@ -54,6 +54,7 @@
       <p class="indicador-detalle"><span id="eventos-criticos">—</span> eventos críticos en 24 h</p>
     </div>
   </div>
+  {% endif %}
 
   {% for grupo in grupos %}
     <section class="panel subsistema" data-subsistema>
@@ -76,7 +77,7 @@
   <section class="panel">
     <div class="panel-encabezado">
       <h3>Alertas activas</h3>
-      <a href="{% url 'tablero:alertas' %}?autobus={{ vehiculo.pk }}" class="enlace-discreto">Ver todas</a>
+      {% if perms.telemetria.ver_tablero %}<a href="{% url 'tablero:alertas' %}?autobus={{ vehiculo.pk }}" class="enlace-discreto">Ver todas</a>{% endif %}
     </div>
     <div class="lista-alertas">
       {% for a in alertas %}
@@ -92,9 +93,9 @@
       {% endfor %}
     </div>
   </section>
-</div>
   {{ config|json_script:"config-resumen" }}
 {% endif %}
+</div>
 {% endblock %}
 
 {% block scripts %}{% if nodo %}<script src="{% static 'js/resumen.js' %}"></script>{% endif %}{% endblock %}

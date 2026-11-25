@@ -5,15 +5,16 @@ from django.contrib.auth.models import Group
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from tablero.roles import ADMINISTRADOR, INGENIERIA, TECNICO, crear_roles
+from confiabilidad import demo as demo_confiabilidad
+from tablero.roles import ADMINISTRADOR, INGENIERIA, TECNICO, TECNICO_CONVENIO, crear_roles
 from telemetria.catalogo import cargar_catalogo
 from telemetria.flota_demo import cargar_flota_demo
 from telemetria.models import Cliente, Gateway, Nodo, Vehiculo
 
 
 class Command(BaseCommand):
-    help = ("Crea los roles, carga el catálogo de señales y, si no existen, el vehículo, gateway y nodo de demostración "
-            "y los autobuses de ejemplo de los clientes.")
+    help = ("Crea los roles, carga el catálogo de señales y el de componentes y, si no existen, el vehículo, gateway y "
+            "nodo de demostración, los autobuses de ejemplo de los clientes y su historial de fallas.")
 
     def add_arguments(self, parser):
         parser.add_argument("--sin-dispositivos", action="store_true", help="No crear dispositivos de demostración.")
@@ -22,22 +23,28 @@ class Command(BaseCommand):
 
     def handle(self, *args, **opciones):
         crear_roles()
-        self.stdout.write(self.style.SUCCESS("✔ Roles: Administrador, Ingeniería, Técnico"))
+        self.stdout.write(self.style.SUCCESS("✔ Roles: Administrador, Ingeniería, Técnico, Técnico de convenio"))
         creadas, actualizadas, retiradas = cargar_catalogo()
         self.stdout.write(self.style.SUCCESS(
             f"✔ Catálogo de señales: {creadas} nuevas, {actualizadas} actualizadas, {retiradas} retiradas"))
+        tipos, causas = demo_confiabilidad.cargar_catalogo()
+        self.stdout.write(self.style.SUCCESS(f"✔ Catálogo de componentes: {tipos} tipos y {causas} causas de falla nuevos"))
         if not opciones["sin_dispositivos"]:
             self._dispositivos()
             creados = cargar_flota_demo()
             self.stdout.write(self.style.SUCCESS(f"✔ Autobuses de ejemplo de los clientes: {creados} nuevos")
                               if creados else "• Los autobuses de ejemplo de los clientes ya existen.")
+        r = demo_confiabilidad.cargar_demo()
+        self.stdout.write(self.style.SUCCESS(
+            f"✔ Confiabilidad: {r['instalados']} componentes instalados, {r['fallas']} fallas de ejemplo, "
+            f"{r['diagnosticos']} alertas con diagnóstico"))
         if opciones["usuarios_demo"]:
             self._usuarios()
 
     def _dispositivos(self):
         if Gateway.objects.exists():
             self.stdout.write("• Ya hay dispositivos registrados. Para obtener una clave nueva usa «Rotar clave» "
-                              "en Tablero → Autobuses.")
+                              "en Administración → Dispositivos.")
             return
         with transaction.atomic():
             cliente, _ = Cliente.objects.get_or_create(
@@ -63,7 +70,8 @@ class Command(BaseCommand):
 
     def _usuarios(self):
         Usuario = get_user_model()
-        cuentas = [("admin_demo", ADMINISTRADOR, True), ("ingeniero_demo", INGENIERIA, False), ("tecnico_demo", TECNICO, False)]
+        cuentas = [("admin_demo", ADMINISTRADOR, True), ("ingeniero_demo", INGENIERIA, False),
+                   ("tecnico_demo", TECNICO, False), ("convenio_demo", TECNICO_CONVENIO, False)]
         for nombre, rol, staff in cuentas:
             if Usuario.objects.filter(username=nombre).exists():
                 self.stdout.write(f"• {nombre} ya existe (no se cambia su contraseña)")

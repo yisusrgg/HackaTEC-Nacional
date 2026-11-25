@@ -13,10 +13,10 @@
     <div class="pantalla-acciones">
       <nav class="segmentado" aria-label="Filtrar órdenes">
         {% for clave, etiqueta in filtros %}
-          <a href="?estado={{ clave }}"{% if filtro == clave %} class="activo" aria-current="page"{% endif %}>{{ etiqueta }}</a>
+          <a href="?estado={{ clave }}"{% if filtro == clave %} class="activo" aria-current="page"{% endif %}>{{ etiqueta }}{% if clave == "mis" and mis %} <b>{{ mis }}</b>{% elif clave == "por_validar" and por_validar %} <b>{{ por_validar }}</b>{% endif %}</a>
         {% endfor %}
       </nav>
-      {% if perms.servicio.gestionar_ordenes %}<a href="{% url 'tablero:orden_nueva' %}" class="btn btn-primario btn-chico">Nueva orden</a>{% endif %}
+      {% if perms.servicio.gestionar_ordenes and perms.telemetria.ver_tablero %}<a href="{% url 'tablero:orden_nueva' %}" class="btn btn-primario btn-chico">Nueva orden</a>{% endif %}
     </div>
   </div>
 
@@ -30,9 +30,9 @@
     {% for o in ordenes %}
       <a class="orden-fila" href="{% url 'tablero:orden' o.pk %}">
         <div class="orden-principal">
-          <p class="orden-folio"><span class="mono">{{ o.folio }}</span> {% include "tablero/_etapa.html" with etapa=o.etapa %}</p>
+          <p class="orden-folio"><span class="mono">{{ o.folio }}</span> {% include "tablero/_etapa.html" with etapa=o.etapa %}{% if o.aprobacion == "PENDIENTE" %} <span class="etiqueta etiqueta-aviso">Por validar por Ingeniería</span>{% elif o.aprobacion == "DEVUELTA" %} <span class="etiqueta etiqueta-critico">Devuelta</span>{% endif %}</p>
           <p class="alerta-titulo">{{ o.titulo }}</p>
-          <p class="alerta-meta">{{ o.vehiculo }} · {% if o.responsable %}{{ o.responsable.get_full_name|default:o.responsable.get_username }}{% else %}sin responsable{% endif %} · abierta {{ o.creada|naturaltime }}</p>
+          <p class="alerta-meta"><span class="mono">{{ o.vehiculo.identificador }}</span> · {{ o.vehiculo.cliente.nombre_comercial }}{% if o.componente %} · {{ o.componente.tipo.nombre }}{% endif %} · {% if o.responsable %}{{ o.responsable.get_full_name|default:o.responsable.get_username }}{% else %}sin responsable{% endif %} · abierta {{ o.creada|naturaltime }}</p>
           {% if o.intentos %}<p class="orden-aviso">La falla volvió {{ o.intentos }} {% if o.intentos == 1 %}vez{% else %}veces{% endif %} durante la validación</p>{% endif %}
         </div>
         <div class="orden-avance" aria-hidden="true">
@@ -43,7 +43,7 @@
     {% empty %}
       <div class="vacio">
         <h2>No hay órdenes en esta vista</h2>
-        <p>Crea una desde una alerta o con el botón «Nueva orden».</p>
+        {% if perms.telemetria.ver_tablero %}<p>Crea una desde una alerta o con el botón «Nueva orden».</p>{% else %}<p>Aquí aparecerán las órdenes que te asignen.</p>{% endif %}
       </div>
     {% endfor %}
   </div>

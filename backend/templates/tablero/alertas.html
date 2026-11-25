@@ -9,13 +9,13 @@
     <div>
       {% if f.autobus %}{% url 'tablero:monitoreo' f.autobus.pk as destino %}{% include "tablero/_regresar.html" with destino=destino %}{% endif %}
       <p class="rotulo">Bandeja de alertas</p>
-      <h2 class="titulo-pantalla">{% if filtro == "activas" %}Alertas activas{% elif filtro == "resueltas" %}Alertas resueltas{% else %}Todas las alertas{% endif %}{% if f.autobus %} <small>· <span class="mono">{{ f.autobus.identificador }}</span></small>{% endif %}</h2>
+      <h2 class="titulo-pantalla">{% if filtro == "activas" %}Alertas activas{% elif filtro == "mis" %}Mis pendientes{% elif filtro == "resueltas" %}Alertas resueltas{% else %}Todas las alertas{% endif %}{% if f.autobus %} <small>· <span class="mono">{{ f.autobus.identificador }}</span></small>{% endif %}</h2>
     </div>
     <div class="pantalla-acciones">
       <span class="contador">{{ page_obj.paginator.count }} en total</span>
       <nav class="segmentado" aria-label="Estado de las alertas">
         {% for clave, etiqueta in filtros %}
-          <a href="?estado={{ clave }}{{ parametro_filtros }}"{% if filtro == clave %} class="activo" aria-current="page"{% endif %}>{{ etiqueta }}</a>
+          <a href="?estado={{ clave }}{{ parametro_filtros }}"{% if filtro == clave %} class="activo" aria-current="page"{% endif %}>{{ etiqueta }}{% if clave == "mis" and mis_pendientes %} <b>{{ mis_pendientes }}</b>{% endif %}</a>
         {% endfor %}
       </nav>
     </div>
@@ -48,6 +48,26 @@
         {% for valor, etiqueta in severidades %}<option value="{{ valor }}"{% if valor == f.severidad %} selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
       </select>
     </div>
+    <div class="campo-grupo">
+      <label for="filtro-region">Región</label>
+      <select id="filtro-region" name="region" class="campo" data-autoenviar>
+        <option value="">Todas</option>
+        {% for valor, etiqueta in regiones %}<option value="{{ valor }}"{% if valor == f.region %} selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="campo-grupo">
+      <label for="filtro-subsistema">Subsistema</label>
+      <select id="filtro-subsistema" name="subsistema" class="campo" data-autoenviar>
+        {% for valor, etiqueta in subsistemas %}<option value="{{ valor }}"{% if valor == f.subsistema %} selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="campo-grupo">
+      <label for="filtro-tomada">Quién la trabaja</label>
+      <select id="filtro-tomada" name="tomada" class="campo" data-autoenviar>
+        {% for valor, etiqueta in opciones_tomada %}<option value="{{ valor }}"{% if valor == f.tomada %} selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+      </select>
+    </div>
+    {% if f.senal %}<input type="hidden" name="senal" value="{{ f.senal.codigo }}">{% endif %}
     <div class="campo-grupo campo-fecha">
       <label for="filtro-desde">Desde</label>
       <input id="filtro-desde" type="date" name="desde" class="campo" value="{{ f.desde|date:'Y-m-d' }}" data-autoenviar>
@@ -59,10 +79,25 @@
     {% if hay_filtros %}
       <div class="acciones">
         <a href="?estado={{ filtro }}" class="btn btn-texto">Quitar filtros</a>
-        {% if f.autobus %}<a href="{% url 'tablero:monitoreo' f.autobus.pk %}" class="btn btn-secundario btn-chico">Monitoreo de {{ f.autobus.identificador }}</a>{% endif %}
+        {% if f.senal %}<span class="etiqueta etiqueta-rol">{{ f.senal.nombre }}</span>{% endif %}
+        {% if f.autobus %}<a href="{% url 'tablero:ficha' f.autobus.pk %}" class="btn btn-secundario btn-chico">Ficha de {{ f.autobus.identificador }}</a>{% endif %}
       </div>
     {% endif %}
   </form>
+
+  {% if grupos %}
+    <section class="panel">
+      <div class="panel-encabezado"><h3>Fallas que se repiten</h3><span class="secundario texto-chico">misma señal y tipo en varias unidades</span></div>
+      <ul class="pendientes">
+        {% for g in grupos %}
+          <li class="pendiente-aviso">
+            <a href="?estado={{ filtro }}&amp;senal={{ g.senal__codigo }}">{{ g.senal__nombre }} · {{ g.tipo_texto|lower }}</a>
+            <span class="secundario">{{ g.n }} alerta{{ g.n|pluralize }} · {{ g.unidades }} unidad{{ g.unidades|pluralize:"es" }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
 
   <div class="panel">
     {% for a in alertas %}
@@ -71,7 +106,11 @@
 
         <div class="alerta-cuerpo">
           <p class="alerta-titulo">{{ a.mensaje }}</p>
-          <p class="alerta-meta">{{ a.get_tipo_display }}{% if a.nodo %} · {{ a.nodo }}{% endif %}{% if a.gateway %} · {{ a.gateway }}{% endif %}</p>
+          {% with v=a.vehiculo %}
+          <p class="alerta-meta">{% if v %}<a href="{% url 'tablero:ficha' v.pk %}" class="mono">{{ v.identificador }}</a> · {{ v.cliente.nombre_comercial }} · {% endif %}{{ a.get_tipo_display }}{% if a.nodo %} · {{ a.nodo }}{% endif %}</p>
+          {% endwith %}
+          {% if a.diagnostico %}<p class="alerta-diagnostico">{% include "tablero/_certeza.html" with certeza=a.certeza %} <span>{{ a.diagnostico }}</span></p>{% endif %}
+          {% if a.tomada_por and a.activa %}<p class="alerta-nota">La trabaja <b>{{ a.tomada_por.get_full_name|default:a.tomada_por.get_username }}</b> desde {{ a.tomada_en|naturaltime }}</p>{% endif %}
           {% if a.atendida_por %}
             <p class="alerta-nota">{{ a.get_estado_display }} por {{ a.atendida_por }} {{ a.atendida_en|naturaltime }}{% if a.nota %}: «{{ a.nota }}»{% endif %}</p>
           {% endif %}
@@ -102,6 +141,17 @@
         {% if a.activa %}{% if perms.telemetria.atender_alerta or perms.servicio.gestionar_ordenes %}
           <div class="alerta-acciones">
             {% if perms.telemetria.atender_alerta %}
+              {% if not a.tomada_por %}
+                <form method="post" action="{% url 'tablero:tomar_alerta' a.pk %}">
+                  {% csrf_token %}<input type="hidden" name="siguiente" value="{{ request.get_full_path }}">
+                  <button type="submit" name="accion" value="tomar" class="btn btn-secundario btn-chico">Tomar</button>
+                </form>
+              {% elif a.tomada_por == request.user or perms.servicio.validar_ordenes %}
+                <form method="post" action="{% url 'tablero:tomar_alerta' a.pk %}">
+                  {% csrf_token %}<input type="hidden" name="siguiente" value="{{ request.get_full_path }}">
+                  <button type="submit" name="accion" value="soltar" class="btn btn-texto btn-chico">Soltar</button>
+                </form>
+              {% endif %}
               <form method="post" action="{% url 'tablero:atender_alerta' a.pk %}">
                 {% csrf_token %}
                 <input type="hidden" name="siguiente" value="{{ request.get_full_path }}">

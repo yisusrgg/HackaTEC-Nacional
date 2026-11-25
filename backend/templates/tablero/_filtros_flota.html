@@ -1,0 +1,47 @@
+{% comment %}
+  Selectores de operador, región y modelo (y periodo si la vista manda `periodos`). Se envían solos al cambiar.
+  Uso: {% include "tablero/_filtros_flota.html" with limpiar=url_sin_filtros %}
+{% endcomment %}<form method="get" class="panel panel-cuerpo filtros" aria-label="Filtros">
+  {% for nombre, valor in ocultos %}<input type="hidden" name="{{ nombre }}" value="{{ valor }}">{% endfor %}
+  <div class="campo-grupo">
+    <label for="filtro-operador">Operador</label>
+    <select id="filtro-operador" name="operador" class="campo" data-autoenviar>
+      <option value="">Todos</option>
+      {% for c in operadores %}<option value="{{ c.pk }}"{% if f.operador and c.pk == f.operador.pk %} selected{% endif %}>{{ c.nombre_comercial }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="campo-grupo">
+    <label for="filtro-region">Región</label>
+    <select id="filtro-region" name="region" class="campo" data-autoenviar>
+      <option value="">Todas</option>
+      {% for valor, etiqueta in regiones %}<option value="{{ valor }}"{% if valor == f.region %} selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="campo-grupo">
+    <label for="filtro-modelo">Modelo</label>
+    <select id="filtro-modelo" name="modelo" class="campo" data-autoenviar>
+      <option value="">Todos</option>
+      {% for m in modelos %}<option value="{{ m }}"{% if m == f.modelo %} selected{% endif %}>{{ m }}</option>{% endfor %}
+    </select>
+  </div>
+  {% if fabricantes %}
+    <div class="campo-grupo">
+      <label for="filtro-fabricante">Fabricante</label>
+      <select id="filtro-fabricante" name="fabricante" class="campo" data-autoenviar>
+        <option value="">Todos</option>
+        {% for nombre in fabricantes %}<option value="{{ nombre }}"{% if nombre == fabricante %} selected{% endif %}>{{ nombre }}</option>{% endfor %}
+      </select>
+    </div>
+  {% endif %}
+  {% if periodos %}
+    <div class="campo-grupo">
+      <label for="filtro-dias">Periodo</label>
+      <select id="filtro-dias" name="dias" class="campo" data-autoenviar>
+        {% for valor, etiqueta in periodos %}<option value="{{ valor }}"{% if valor == f.dias %} selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+      </select>
+    </div>
+  {% endif %}
+  {% if hay_filtros %}
+    <div class="acciones"><a href="{{ limpiar }}" class="btn btn-texto">Quitar filtros</a></div>
+  {% endif %}
+</form>

@@ -48,8 +48,12 @@ def _alerta(nodo, codigo, tipo, valor, cuando):
         clave = f"UMBRAL:nodo={nodo.pk}:senal={senal.pk}"
         sentido, umbral = ("alta", senal.umbral_alto) if tipo == Alerta.Tipo.UMBRAL_ALTO else ("baja", senal.umbral_bajo)
         severidad, mensaje = senal.severidad_alerta, _mensaje_umbral(senal, valor, sentido, umbral)
-    Alerta.objects.create(clave_dedup=clave, tipo=tipo, severidad=severidad, mensaje=mensaje[:255], valor=valor,
-                          nodo=nodo, senal=senal, gateway=nodo.gateway, ultima_vez=cuando, nota=NOTA_ALERTA)
+    from confiabilidad import diagnostico
+
+    alerta = Alerta(clave_dedup=clave, tipo=tipo, severidad=severidad, mensaje=mensaje[:255], valor=valor,
+                    nodo=nodo, senal=senal, gateway=nodo.gateway, ultima_vez=cuando, nota=NOTA_ALERTA)
+    diagnostico.aplicar(alerta)
+    alerta.save()
 
 
 def cargar_flota_demo():

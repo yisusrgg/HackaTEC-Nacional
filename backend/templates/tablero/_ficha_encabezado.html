@@ -1,0 +1,17 @@
+{% comment %}Encabezado y pestañas de la ficha de la unidad. Lo usan ficha.html y monitoreo.html (pestaña En vivo).{% endcomment %}
+<div class="pantalla-encabezado">
+  <div>
+    {% url 'tablero:autobuses' as destino %}{% include "tablero/_regresar.html" with destino=destino %}
+    <p class="rotulo">{{ vehiculo.cliente.nombre_comercial }}{% if vehiculo.modelo %} · {{ vehiculo.modelo }}{% endif %}{% if vehiculo.region %} · {{ vehiculo.get_region_display }}{% endif %}</p>
+    <h2 class="titulo-pantalla"><span class="mono">{{ vehiculo.identificador }}</span> <small>{{ vehiculo.nombre }}</small></h2>
+  </div>
+</div>
+<nav class="pestanas" aria-label="Secciones de la unidad">
+  {% for clave, nombre in pestanas.items %}
+    {% if clave == "en_vivo" %}
+      <a href="{% url 'tablero:monitoreo' vehiculo.pk %}"{% if pestana == clave %} class="activo" aria-current="page"{% endif %}>{{ nombre }}</a>
+    {% else %}
+      <a href="{% url 'tablero:ficha' vehiculo.pk %}{% if clave != 'resumen' %}?pestana={{ clave }}{% endif %}"{% if pestana == clave %} class="activo" aria-current="page"{% endif %}>{{ nombre }}</a>
+    {% endif %}
+  {% endfor %}
+</nav>

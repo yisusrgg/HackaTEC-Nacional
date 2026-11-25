@@ -43,8 +43,8 @@ class AutobusesTests(TestCase):
     def test_sin_filtros_muestra_todos(self):
         self.assertEqual(self.identificadores(), ["D-1", "U-1", "U-2"])
 
-    def test_filtro_por_cliente(self):
-        self.assertEqual(self.identificadores(cliente=self.uno.pk), ["U-1", "U-2"])
+    def test_filtro_por_operador(self):
+        self.assertEqual(self.identificadores(operador=self.uno.pk), ["U-1", "U-2"])
 
     def test_filtros_de_alertas(self):
         self.assertEqual(self.identificadores(alertas="con"), ["U-1", "U-2"])
@@ -57,13 +57,14 @@ class AutobusesTests(TestCase):
         self.assertEqual(self.identificadores(q="u-2"), ["U-2"])
 
     def test_filtros_combinados_y_valores_invalidos(self):
-        self.assertEqual(self.identificadores(cliente=self.uno.pk, alertas="criticas", conexion="en_linea"), ["U-1"])
-        self.assertEqual(self.identificadores(cliente="abc", alertas="xyz"), ["D-1", "U-1", "U-2"])
+        self.assertEqual(self.identificadores(operador=self.uno.pk, alertas="criticas", conexion="en_linea"), ["U-1"])
+        self.assertEqual(self.identificadores(operador="abc", alertas="xyz"), ["D-1", "U-1", "U-2"])
 
-    def test_cada_tarjeta_tiene_boton_de_monitoreo(self):
+    def test_cada_fila_lleva_a_la_ficha_y_la_ficha_al_monitoreo(self):
         respuesta = self.client.get(reverse("tablero:autobuses"))
-        self.assertContains(respuesta, reverse("tablero:monitoreo", args=[self.bus_critico.pk]))
-        self.assertContains(respuesta, ">Monitoreo</a>", count=3)
+        ficha = reverse("tablero:ficha", args=[self.bus_critico.pk])
+        self.assertContains(respuesta, f'href="{ficha}"')
+        self.assertContains(self.client.get(ficha), reverse("tablero:monitoreo", args=[self.bus_critico.pk]))
 
     def test_monitoreo_es_del_autobus_indicado(self):
         respuesta = self.client.get(reverse("tablero:monitoreo", args=[self.bus_tranquilo.pk]))
@@ -158,4 +159,4 @@ class AutobusesTests(TestCase):
         self.client.force_login(self.ingeniero)
         respuesta = self.client.post(reverse("tablero:cambiar_estado", args=["nodo", self.nodo_tranquilo.pk]),
                                      {"siguiente": "https://ejemplo.com/"})
-        self.assertRedirects(respuesta, reverse("tablero:autobuses"))
+        self.assertRedirects(respuesta, reverse("tablero:dispositivos"))

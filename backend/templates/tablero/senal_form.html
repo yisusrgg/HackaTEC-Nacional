@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block titulo %}{{ senal.nombre }}{% endblock %}
+{% block encabezado %}Señales y umbrales{% endblock %}
+
+{% block contenido %}
+<div class="pantalla angosto">
+  <div>
+    {% url 'tablero:senales' as destino %}{% include "tablero/_regresar.html" with destino=destino %}
+    <p class="rotulo">{{ senal.get_subsistema_display }} · <span class="mono">{{ senal.codigo }}</span></p>
+    <h2 class="titulo-pantalla">{{ senal.nombre }}{% if senal.unidad %} <small>{{ senal.unidad }}</small>{% endif %}</h2>
+  </div>
+
+  <div class="mensaje mensaje-info">Los cambios se aplican a las lecturas que lleguen desde ahora y quedan en la bitácora con el valor anterior.</div>
+
+  <form method="post" class="panel" novalidate>
+    {% csrf_token %}
+    <div class="panel-encabezado"><h3>Rango válido</h3><span class="secundario texto-chico">fuera de él, la lectura se marca como sospechosa</span></div>
+    <div class="panel-cuerpo formulario">
+      <div class="dos-campos">
+        {% include "tablero/_campo.html" with campo=form.rango_min %}
+        {% include "tablero/_campo.html" with campo=form.rango_max %}
+      </div>
+    </div>
+    <div class="panel-encabezado borde-arriba"><h3>Alerta</h3><span class="secundario texto-chico">deja vacío para no alertar por ese lado</span></div>
+    <div class="panel-cuerpo formulario">
+      <div class="dos-campos">
+        {% include "tablero/_campo.html" with campo=form.umbral_bajo %}
+        {% include "tablero/_campo.html" with campo=form.umbral_alto %}
+      </div>
+      {% include "tablero/_campo.html" with campo=form.severidad_alerta %}
+    </div>
+    <div class="panel-cuerpo borde-arriba acciones">
+      <button type="submit" class="btn btn-primario">Guardar</button>
+      <a href="{% url 'tablero:senales' %}" class="btn btn-texto">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

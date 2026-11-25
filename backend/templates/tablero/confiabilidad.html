@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block titulo %}Confiabilidad de componentes{% endblock %}
+{% block encabezado %}Confiabilidad de componentes{% endblock %}
+
+{% block contenido %}
+<div class="pantalla">
+  <div class="pantalla-encabezado">
+    <div>
+      <p class="rotulo">Vida real contra la garantía del fabricante</p>
+      <h2 class="titulo-pantalla">Confiabilidad de componentes</h2>
+    </div>
+    {% if perms.confiabilidad.gestionar_catalogo %}
+      <div class="pantalla-acciones"><a href="{% url 'tablero:catalogo' %}" class="enlace-discreto">Catálogo de componentes</a></div>
+    {% endif %}
+  </div>
+
+  {% include "tablero/_filtros_flota.html" %}
+
+  <div class="indicadores indicadores-3">
+    <div class="indicador">
+      <p class="rotulo">Fallas confirmadas</p>
+      <p class="cifra">{{ total_fallas }}</p>
+      <p class="indicador-detalle">en el periodo, con causa registrada</p>
+    </div>
+    <div class="indicador">
+      <p class="rotulo">Fallas prematuras</p>
+      <p class="cifra{% if prematuras %} cifra-critico{% endif %}">{{ prematuras }}</p>
+      <p class="indicador-detalle">antes del límite de su garantía</p>
+    </div>
+    <div class="indicador">
+      <p class="rotulo">Causa principal</p>
+      <p class="cifra cifra-chica">{% if pareto %}{{ pareto.0.nombre }}{% else %}—{% endif %}</p>
+      <p class="indicador-detalle">{% if pareto %}{{ pareto.0.porcentaje }} % de las fallas{% else %}sin fallas en el periodo{% endif %}</p>
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-encabezado">
+      <h3>Por tipo de componente</h3>
+      <span class="secundario texto-chico">la barra marca la vida promedio a la falla; la línea, el 100 % de la garantía</span>
+    </div>
+    <div class="tabla-contenedor tabla-sin-borde">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Componente</th>
+            <th class="numeros">Instalados</th>
+            <th class="numeros" title="Promedio de vida consumida de las piezas instaladas hoy">Vida media consumida</th>
+            <th class="numeros">Fallas</th>
+            <th>Vida promedio a la falla</th>
+            <th class="numeros">Prematuras</th>
+            <th title="Tempranas · dentro de garantía · después de la garantía">Reparto</th>
+            <th>Tendencia</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for fila in tipos %}
+            <tr>
+              <td>
+                <a href="{% url 'tablero:componente_tipo' fila.tipo.pk %}{% if q %}?{{ q }}{% endif %}" class="usuario-nombre"><b>{{ fila.tipo.nombre }}</b></a>
+                <small class="bloque secundario">{{ fila.tipo.fabricante|default:"—" }} · {{ fila.tipo.vida_garantizada }} {{ fila.tipo.unidad_texto }} · {{ fila.tipo.get_medicion_display|lower }}</small>
+              </td>
+              <td class="numeros">{{ fila.instalados }}</td>
+              <td class="numeros">{% if fila.vida_media is not None %}{{ fila.vida_media }} %{% else %}—{% endif %}</td>
+              <td class="numeros">{{ fila.fallas }}{% if fila.muestra_chica %} <span class="etiqueta etiqueta-apagado" title="Menos de {{ muestra_minima }} fallas: la muestra es pequeña">muestra chica</span>{% endif %}</td>
+              <td class="celda-barra">
+                {% if fila.vida_a_la_falla is not None %}
+                  <span class="garantia">
+                    <progress class="barra {% if fila.cumple %}vida-ok{% else %}vida-vencido{% endif %}" value="{{ fila.vida_a_la_falla }}" max="150" aria-label="Vida promedio a la falla">{{ fila.vida_a_la_falla }} %</progress>
+                  </span>
+                  <small class="{% if fila.cumple %}secundario{% else %}texto-critico{% endif %}">{{ fila.vida_a_la_falla }} % de la garantía</small>
+                {% else %}<span class="secundario">sin fallas</span>{% endif %}
+              </td>
+              <td class="numeros{% if fila.pct_prematuras >= 30 %} texto-critico{% endif %}">{% if fila.fallas %}{{ fila.pct_prematuras }} %{% else %}—{% endif %}</td>
+              <td class="numeros texto-chico">{% if fila.fallas %}{{ fila.tempranas }} · {{ fila.normales }} · {{ fila.tardias }}{% else %}—{% endif %}</td>
+              <td>{% if fila.tendencia == "sube" %}<span class="texto-critico">↑ sube</span>{% elif fila.tendencia == "baja" %}<span class="texto-ok">↓ baja</span>{% elif fila.tendencia %}<span class="secundario">= igual</span>{% else %}—{% endif %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="8" class="lista-vacia">No hay tipos de componente en el catálogo.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="dos-columnas dos-columnas-iguales">
+    <section class="panel">
+      <div class="panel-encabezado"><h3>Causas confirmadas</h3><span class="secundario texto-chico">Pareto</span></div>
+      {% if pareto %}
+        <ul class="barras">
+          {% for c in pareto %}
+            <li>
+              <span class="barras-nombre">{{ c.nombre }}<small>acumulado {{ c.acumulado }} %</small></span>
+              <progress class="barra" value="{{ c.porcentaje }}" max="100">{{ c.porcentaje }} %</progress>
+              <span class="barras-valor">{{ c.n }}<small>{{ c.porcentaje }} %</small></span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="lista-vacia">Sin fallas confirmadas en el periodo.</p>
+      {% endif %}
+    </section>
+
+    <section class="panel">
+      <div class="panel-encabezado">
+        <h3>Comparación</h3>
+        <nav class="segmentado" aria-label="Comparar por">
+          {% for clave, etiqueta in comparaciones %}
+            <a href="?comparar={{ clave }}{% if q %}&amp;{{ q }}{% endif %}"{% if por == clave %} class="activo" aria-current="true"{% endif %}>{{ etiqueta }}</a>
+          {% endfor %}
+        </nav>
+      </div>
+      <div class="tabla-contenedor tabla-sin-borde">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>{% for clave, etiqueta in comparaciones %}{% if clave == por %}{{ etiqueta }}{% endif %}{% endfor %}</th>
+              <th class="numeros">{% if por == "fabricante" %}Piezas{% else %}Unidades{% endif %}</th>
+              <th class="numeros">Fallas</th>
+              <th class="numeros" title="Fallas por cada 100 {% if por == 'fabricante' %}piezas{% else %}unidades{% endif %}">Por cada 100</th>
+              <th class="numeros">Prematuras</th>
+              <th class="numeros">Vida a la falla</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in comparacion %}
+              <tr>
+                <td>{{ c.grupo }}</td>
+                <td class="numeros">{{ c.base }}</td>
+                <td class="numeros">{{ c.fallas }}</td>
+                <td class="numeros"><b>{{ c.tasa|default_if_none:"—" }}</b></td>
+                <td class="numeros{% if c.pct_prematuras >= 30 %} texto-critico{% endif %}">{% if c.fallas %}{{ c.pct_prematuras }} %{% else %}—{% endif %}</td>
+                <td class="numeros">{% if c.vida_a_la_falla is not None %}{{ c.vida_a_la_falla }} %{% else %}—{% endif %}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="6" class="lista-vacia">Sin datos.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

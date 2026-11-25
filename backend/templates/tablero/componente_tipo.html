@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block titulo %}{{ tipo.nombre }}{% endblock %}
+{% block encabezado %}Confiabilidad de componentes{% endblock %}
+
+{% block contenido %}
+<div class="pantalla">
+  <div class="pantalla-encabezado">
+    <div>
+      {% url 'tablero:confiabilidad' as destino %}{% include "tablero/_regresar.html" with destino=destino %}
+      <p class="rotulo">{{ tipo.get_subsistema_display }} · {{ tipo.fabricante|default:"sin fabricante" }}{% if tipo.modelo %} · {{ tipo.modelo }}{% endif %}</p>
+      <h2 class="titulo-pantalla">{{ tipo.nombre }}</h2>
+    </div>
+    {% if puede_editar %}<div class="pantalla-acciones"><a href="{% url 'tablero:catalogo_editar' tipo.pk %}" class="btn btn-secundario btn-chico">Editar en el catálogo</a></div>{% endif %}
+  </div>
+
+  {% include "tablero/_filtros_flota.html" %}
+
+  <dl class="ficha">
+    <div><dt>Vida garantizada</dt><dd>{{ tipo.vida_garantizada|intcomma }} {{ tipo.unidad_texto }}<small>según el fabricante</small></dd></div>
+    <div><dt>Falla prematura</dt><dd>antes del {{ tipo.limite_prematura }} %<small>de la vida garantizada</small></dd></div>
+    <div><dt>Regla de conteo</dt><dd>{{ tipo.get_medicion_display }}<small>{{ tipo.get_regla_display }}</small></dd></div>
+    <div><dt>Instalados hoy</dt><dd>{{ instalados }}<small>{% if resumen and resumen.vida_media is not None %}vida media consumida {{ resumen.vida_media }} %{% else %}—{% endif %}</small></dd></div>
+    <div><dt>Fallas confirmadas</dt><dd>{{ histograma.total }}<small>{% if resumen and resumen.fallas %}{{ resumen.pct_prematuras }} % prematuras{% else %}en el periodo{% endif %}</small></dd></div>
+    <div><dt>Vida promedio a la falla</dt><dd class="{% if resumen and resumen.cumple is False %}texto-critico{% endif %}">{% if resumen and resumen.vida_a_la_falla is not None %}{{ resumen.vida_a_la_falla }} %{% else %}—{% endif %}<small>de la garantía</small></dd></div>
+  </dl>
+
+  {% if resumen.muestra_chica %}
+    <div class="mensaje mensaje-aviso">Hay menos de 5 fallas en el periodo: la muestra es pequeña para sacar conclusiones.</div>
+  {% endif %}
+
+  <div class="dos-columnas dos-columnas-iguales">
+    <section class="panel">
+      <div class="panel-encabezado"><h3>¿Cuándo falla?</h3><span class="secundario texto-chico">fallas por tramo de vida consumida</span></div>
+      <ul class="barras histograma">
+        {% for c in histograma.cubetas %}
+          <li class="{% if c.despues_de_garantia %}tras-garantia{% endif %}">
+            <span class="barras-nombre">{{ c.etiqueta }}{% if c.prematura %}<small>falla prematura</small>{% elif c.despues_de_garantia %}<small>después de la garantía</small>{% endif %}</span>
+            <progress class="barra{% if c.prematura %} vida-vencido{% endif %}" value="{{ c.n }}" max="{{ histograma.maximo }}">{{ c.n }}</progress>
+            <span class="barras-valor">{{ c.n }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="panel">
+      <div class="panel-encabezado"><h3>¿Por qué falla?</h3><span class="secundario texto-chico">causas confirmadas</span></div>
+      {% if pareto %}
+        <ul class="barras">
+          {% for c in pareto %}
+            <li>
+              <span class="barras-nombre">{{ c.nombre }}</span>
+              <progress class="barra" value="{{ c.porcentaje }}" max="100">{{ c.porcentaje }} %</progress>
+              <span class="barras-valor">{{ c.n }}<small>{{ c.porcentaje }} %</small></span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}<p class="lista-vacia">Sin fallas confirmadas en el periodo.</p>{% endif %}
+    </section>
+  </div>
+
+  <div class="dos-columnas dos-columnas-iguales">
+    <section class="panel">
+      <div class="panel-encabezado"><h3>¿Dónde falla? Por región</h3></div>
+      {% include "tablero/_comparacion.html" with filas=por_region %}
+    </section>
+    <section class="panel">
+      <div class="panel-encabezado"><h3>Por operador</h3></div>
+      {% include "tablero/_comparacion.html" with filas=por_operador %}
+    </section>
+  </div>
+
+  {% if reincidencias %}
+    <section class="panel">
+      <div class="panel-encabezado"><h3>Unidades con reincidencia</h3><span class="secundario texto-chico">dos fallas o más de esta pieza</span></div>
+      <ul class="pendientes">
+        {% for r in reincidencias %}
+          <li class="{% if r.prematuras %}pendiente-critico{% else %}pendiente-aviso{% endif %}">
+            <span><a href="{% url 'tablero:ficha' r.componente__vehiculo %}?pestana=fallas" class="mono">{{ r.componente__vehiculo__identificador }}</a> · {{ r.componente__vehiculo__cliente__nombre_comercial }}</span>
+            <span class="secundario">{{ r.n }} fallas{% if r.prematuras %} · {{ r.prematuras }} prematura{{ r.prematuras|pluralize }}{% endif %}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+  {% if cerca %}
+    <section class="panel">
+      <div class="panel-encabezado"><h3>Piezas instaladas arriba del 80 %</h3></div>
+      <ul class="barras barras-vida">
+        {% for c in cerca %}
+          <li>
+            <span class="barras-nombre"><a href="{% url 'tablero:componente' c.pk %}" class="mono">{{ c.vehiculo.identificador }}</a><small>{{ c.vehiculo.cliente.nombre_comercial }} · serie {{ c.numero_serie|default:"—" }}</small></span>
+            {% include "tablero/_vida.html" with componente=c %}
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+  <section class="panel">
+    <div class="panel-encabezado"><h3>Fallas registradas</h3><span class="secundario texto-chico">las 50 más recientes del periodo</span></div>
+    <div class="tabla-contenedor tabla-sin-borde">
+      <table class="tabla">
+        <thead><tr><th>Fecha</th><th>Unidad</th><th>Serie</th><th class="numeros">Uso al fallar</th><th class="numeros">% garantía</th><th>Causa</th><th>Orden</th></tr></thead>
+        <tbody>
+          {% for falla in fallas %}
+            <tr>
+              <td>{{ falla.fecha|date:"d/m/Y" }}</td>
+              <td><a href="{% url 'tablero:ficha' falla.componente.vehiculo_id %}" class="mono">{{ falla.componente.vehiculo.identificador }}</a><small class="bloque secundario">{{ falla.componente.vehiculo.cliente.nombre_comercial }}</small></td>
+              <td><a href="{% url 'tablero:componente' falla.componente_id %}" class="mono">{{ falla.componente.numero_serie|default:"—" }}</a></td>
+              <td class="numeros">{{ falla.uso_al_fallar|floatformat:0|intcomma }} {{ tipo.unidad_texto }}</td>
+              <td class="numeros">{% if falla.momento == "TEMPRANA" %}<span class="etiqueta etiqueta-critico">{{ falla.porcentaje_garantia|floatformat:0 }} %</span>{% else %}{{ falla.porcentaje_garantia|floatformat:0 }} %{% endif %}</td>
+              <td>{{ falla.causa|default:"—" }}</td>
+              <td>{% if falla.orden %}<a href="{% url 'tablero:orden' falla.orden.pk %}" class="mono">{{ falla.orden.folio }}</a>{% else %}<span class="secundario">histórico</span>{% endif %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7" class="lista-vacia">Sin fallas confirmadas en el periodo.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

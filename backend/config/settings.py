@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "telemetria",
     "tablero",
     "servicio",
+    "confiabilidad",
 ]
 
 MIDDLEWARE = [
@@ -152,7 +153,7 @@ if sys.argv[1:2] == ["test"]:
     PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
 LOGIN_URL = "cuentas:login"
-LOGIN_REDIRECT_URL = "tablero:resumen"
+LOGIN_REDIRECT_URL = "tablero:inicio"  # cada rol entra a su pantalla (tablero/panorama.py)
 LOGOUT_REDIRECT_URL = "cuentas:login"
 
 # --- Sesiones, cookies y cabeceras de seguridad --------------------------------------------------

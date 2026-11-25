@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block titulo %}Calidad de los datos{% endblock %}
+{% block encabezado %}Calidad de los datos{% endblock %}
+
+{% block contenido %}
+<div class="pantalla">
+  <div class="pantalla-encabezado">
+    <div>
+      <p class="rotulo">¿Es el autobús o es el sensor?</p>
+      <h2 class="titulo-pantalla">Calidad de los datos</h2>
+    </div>
+  </div>
+
+  {% include "tablero/_filtros_flota.html" %}
+
+  <div class="indicadores indicadores-3">
+    <div class="indicador">
+      <p class="rotulo">Sin reportar más de 24 h</p>
+      <p class="cifra{% if n_sin_reportar %} cifra-aviso{% endif %}">{{ n_sin_reportar }} <small>de {{ total_unidades }}</small></p>
+      <p class="indicador-detalle">unidades sin contacto de su gateway</p>
+    </div>
+    <div class="indicador">
+      <p class="rotulo">Lecturas válidas</p>
+      <p class="cifra">{% if validas is not None %}{{ validas }} <small>%</small>{% else %}—{% endif %}</p>
+      <p class="indicador-detalle">{{ lecturas|intcomma }} lecturas en el periodo</p>
+    </div>
+    <div class="indicador">
+      <p class="rotulo">Tramas perdidas</p>
+      <p class="cifra">{% if perdida is not None %}{{ perdida }} <small>%</small>{% else %}—{% endif %}</p>
+      <p class="indicador-detalle">entre los nodos y el servidor, desde siempre</p>
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-encabezado">
+      <h3>Sensores poco confiables</h3>
+      <span class="secundario texto-chico">menos de {{ calidad_minima }} % de lecturas válidas</span>
+    </div>
+    {% if sensores %}
+      <div class="tabla-contenedor tabla-sin-borde">
+        <table class="tabla">
+          <thead><tr><th>Unidad</th><th>Sensor</th><th class="numeros">Lecturas</th><th class="numeros">Válidas</th><th class="numeros">Sin dato</th><th><span class="sr-only">Acciones</span></th></tr></thead>
+          <tbody>
+            {% for s in sensores %}
+              <tr>
+                <td><a href="{% url 'tablero:ficha' s.nodo__gateway__vehiculo %}" class="mono">{{ s.nodo__gateway__vehiculo__identificador }}</a></td>
+                <td><a href="{% url 'tablero:senal' s.senal__codigo %}?nodo={{ s.nodo }}">{{ s.senal__nombre }}</a></td>
+                <td class="numeros">{{ s.total|intcomma }}</td>
+                <td class="numeros texto-critico">{{ s.validas }} %</td>
+                <td class="numeros">{{ s.sin_dato|intcomma }}</td>
+                <td class="derecha">{% if perms.servicio.gestionar_ordenes %}<a href="{% url 'tablero:orden_nueva' %}?vehiculo={{ s.nodo__gateway__vehiculo }}&amp;nodo={{ s.nodo }}&amp;revisar={{ s.senal }}" class="btn btn-secundario btn-chico">Crear orden</a>{% endif %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="lista-vacia">Todos los sensores entregan al menos {{ calidad_minima }} % de lecturas válidas.</p>
+    {% endif %}
+  </section>
+
+  <div class="dos-columnas dos-columnas-iguales">
+    <section class="panel">
+      <div class="panel-encabezado"><h3>Unidades sin reportar</h3><span class="secundario texto-chico">más de 24 h</span></div>
+      {% if sin_reportar %}
+        <ul class="pendientes">
+          {% for v in sin_reportar|slice:":12" %}
+            <li class="pendiente-aviso"><span><a href="{% url 'tablero:ficha' v.pk %}" class="mono">{{ v.identificador }}</a> · {{ v.cliente.nombre_comercial }}</span></li>
+          {% endfor %}
+        </ul>
+      {% else %}<p class="lista-vacia">Todas las unidades reportaron en las últimas 24 h.</p>{% endif %}
+    </section>
+
+    <section class="panel">
+      <div class="panel-encabezado"><h3>Gateways con tramas rechazadas</h3><span class="secundario texto-chico">firma inválida o repetidas</span></div>
+      {% if gateways %}
+        <ul class="pendientes">
+          {% for g in gateways %}
+            <li class="pendiente-critico"><span><span class="mono">{{ g.gateway__identificador }}</span> · <a href="{% url 'tablero:ficha' g.gateway__vehiculo %}" class="mono">{{ g.gateway__vehiculo__identificador }}</a></span><span class="secundario">{{ g.rechazadas|intcomma }} de {{ g.tramas|intcomma }}</span></li>
+          {% endfor %}
+        </ul>
+      {% else %}<p class="lista-vacia">Ningún gateway tuvo tramas rechazadas en el periodo.</p>{% endif %}
+    </section>
+  </div>
+
+  <div class="dos-columnas dos-columnas-iguales">
+    <section class="panel">
+      <div class="panel-encabezado"><h3>Nodos con más reinicios</h3></div>
+      {% if nodos_reinicios %}
+        <ul class="pendientes">
+          {% for n in nodos_reinicios %}
+            <li class="pendiente-aviso"><span><a href="{% url 'tablero:ficha' n.gateway.vehiculo_id %}" class="mono">{{ n.gateway.vehiculo.identificador }}</a> · {{ n }}</span><span class="secundario">{{ n.reinicios }} reinicio{{ n.reinicios|pluralize }}</span></li>
+          {% endfor %}
+        </ul>
+      {% else %}<p class="lista-vacia">Ningún nodo se ha reiniciado.</p>{% endif %}
+    </section>
+    <section class="panel">
+      <div class="panel-encabezado"><h3>Nodos con tramas rechazadas</h3></div>
+      {% if nodos_rechazos %}
+        <ul class="pendientes">
+          {% for n in nodos_rechazos %}
+            <li class="pendiente-critico"><span><a href="{% url 'tablero:ficha' n.gateway.vehiculo_id %}" class="mono">{{ n.gateway.vehiculo.identificador }}</a> · {{ n }}</span><span class="secundario">{{ n.tramas_rechazadas|intcomma }}</span></li>
+          {% endfor %}
+        </ul>
+      {% else %}<p class="lista-vacia">Ningún nodo tiene tramas rechazadas.</p>{% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}

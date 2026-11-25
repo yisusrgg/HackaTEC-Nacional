@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block titulo %}{% if tipo %}{{ tipo.nombre }}{% else %}Nuevo tipo de componente{% endif %}{% endblock %}
+{% block encabezado %}Catálogo de componentes{% endblock %}
+
+{% block contenido %}
+<div class="pantalla angosto">
+  <div>
+    {% url 'tablero:catalogo' as destino %}{% include "tablero/_regresar.html" with destino=destino %}
+    <p class="rotulo">Catálogo de componentes</p>
+    <h2 class="titulo-pantalla">{% if tipo %}{{ tipo.nombre }}{% else %}Nuevo tipo de componente{% endif %}</h2>
+  </div>
+
+  {% if not tipo %}
+    <div class="mensaje mensaje-info">Al guardarlo, se instala en todas las unidades con su conteo en cero.</div>
+  {% endif %}
+
+  <form method="post" class="panel" novalidate>
+    {% csrf_token %}
+    <div class="panel-encabezado"><h3>La pieza</h3></div>
+    <div class="panel-cuerpo formulario">
+      <div class="dos-campos">
+        {% include "tablero/_campo.html" with campo=form.nombre %}
+        {% include "tablero/_campo.html" with campo=form.codigo %}
+      </div>
+      <div class="dos-campos">
+        {% include "tablero/_campo.html" with campo=form.subsistema %}
+        {% include "tablero/_campo.html" with campo=form.fabricante %}
+      </div>
+      {% include "tablero/_campo.html" with campo=form.modelo %}
+    </div>
+
+    <div class="panel-encabezado borde-arriba"><h3>Lo que promete el fabricante</h3></div>
+    <div class="panel-cuerpo formulario">
+      <div class="dos-campos">
+        {% include "tablero/_campo.html" with campo=form.vida_garantizada %}
+        {% include "tablero/_campo.html" with campo=form.unidad_vida %}
+      </div>
+      {% include "tablero/_campo.html" with campo=form.limite_prematura %}
+    </div>
+
+    <div class="panel-encabezado borde-arriba"><h3>Cómo se cuenta su uso</h3></div>
+    <div class="panel-cuerpo formulario">
+      {% include "tablero/_campo.html" with campo=form.regla %}
+      {% include "tablero/_campo.html" with campo=form.medicion %}
+      <label class="casilla">{{ form.activo }} {{ form.activo.label }}</label>
+      {% include "tablero/_campo.html" with campo=form.nota %}
+    </div>
+
+    <div class="panel-cuerpo borde-arriba acciones">
+      <button type="submit" class="btn btn-primario">Guardar</button>
+      <a href="{% url 'tablero:catalogo' %}" class="btn btn-texto">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

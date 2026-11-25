@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block titulo %}{{ componente.tipo.nombre }} · {{ componente.vehiculo.identificador }}{% endblock %}
+{% block encabezado %}Componente instalado{% endblock %}
+
+{% block contenido %}
+<div class="pantalla">
+  <div class="pantalla-encabezado">
+    <div>
+      {% url 'tablero:ficha' componente.vehiculo_id as ficha %}{% with destino=ficha|add:"?pestana=componentes" %}{% include "tablero/_regresar.html" %}{% endwith %}
+      <p class="rotulo"><span class="mono">{{ componente.vehiculo.identificador }}</span> · {{ componente.vehiculo.cliente.nombre_comercial }}</p>
+      <h2 class="titulo-pantalla">{{ componente.tipo.nombre }} {% if componente.numero_serie %}<small class="mono">{{ componente.numero_serie }}</small>{% endif %}</h2>
+    </div>
+    <div class="pantalla-acciones">
+      {% if componente.activo %}<span class="etiqueta etiqueta-ok">Instalado</span>{% else %}<span class="etiqueta etiqueta-apagado">Retirado {{ componente.retirado_en|date:"d/m/Y" }}</span>{% endif %}
+      {% if perms.confiabilidad.ver_confiabilidad %}<a href="{% url 'tablero:componente_tipo' componente.tipo_id %}" class="enlace-discreto">Confiabilidad de este tipo</a>{% endif %}
+    </div>
+  </div>
+
+  <section class="panel">
+    <div class="panel-encabezado"><h3>Vida consumida</h3><span class="secundario texto-chico">{{ componente.tipo.get_medicion_display|lower }} · {{ componente.tipo.get_regla_display }}</span></div>
+    <ul class="barras barras-vida barras-grande">
+      <li>
+        <span class="barras-nombre">{{ componente.tipo.vida_garantizada|intcomma }} {{ componente.tipo.unidad_texto }} garantizados<small>falla prematura antes del {{ componente.tipo.limite_prematura }} %</small></span>
+        {% include "tablero/_vida.html" %}
+      </li>
+    </ul>
+  </section>
+
+  <dl class="ficha">
+    <div><dt>Instalado</dt><dd>{{ componente.instalado_en|date:"d/m/Y" }}<small>{{ componente.instalado_en|naturaltime }}</small></dd></div>
+    <div><dt>Ciclos</dt><dd>{{ componente.ciclos|intcomma }}<small>{% if componente.tipo.regla == "VENTILADOR" or componente.tipo.regla == "LUZ_INTERIOR" %}arranques o encendidos{% else %}usos o llenados{% endif %}</small></dd></div>
+    <div><dt>Horas</dt><dd>{{ componente.horas|floatformat:1|intcomma }}<small>{% if componente.horas %}tiempo funcionando{% else %}esta pieza se mide en ciclos{% endif %}</small></dd></div>
+    <div><dt>Fabricante</dt><dd>{{ componente.tipo.fabricante|default:"—" }}<small>{{ componente.tipo.modelo|default:"" }}</small></dd></div>
+    {% if reemplaza_a %}<div><dt>Reemplazó a</dt><dd><a href="{% url 'tablero:componente' reemplaza_a.componente_id %}" class="mono">{{ reemplaza_a.componente.numero_serie|default:"pieza anterior" }}</a><small>que falló al {{ reemplaza_a.porcentaje_garantia|floatformat:0 }} %</small></dd></div>{% endif %}
+  </dl>
+
+  {% if fallas %}
+    <section class="panel">
+      <div class="panel-encabezado"><h3>Falla de esta pieza</h3></div>
+      <dl class="ficha ficha-sin-borde">
+        {% for falla in fallas %}
+          <div><dt>Fecha</dt><dd>{{ falla.fecha|date:"d/m/Y" }}</dd></div>
+          <div><dt>Uso al fallar</dt><dd>{{ falla.uso_al_fallar|floatformat:0|intcomma }} {{ componente.tipo.unidad_texto }}<small>{{ falla.porcentaje_garantia|floatformat:0 }} % de la garantía</small></dd></div>
+          <div><dt>Resultado</dt><dd>{% if falla.momento == "TEMPRANA" %}<span class="etiqueta etiqueta-critico">Prematura</span>{% else %}{{ falla.get_momento_display }}{% endif %}{% if not falla.confirmada %}<small>sin confirmar: no cuenta todavía</small>{% endif %}</dd></div>
+          <div><dt>Causa</dt><dd>{{ falla.causa|default:"—" }}{% if falla.orden %}<small><a href="{% url 'tablero:orden' falla.orden.pk %}">{{ falla.orden.folio }}</a></small>{% endif %}</dd></div>
+        {% endfor %}
+      </dl>
+    </section>
+  {% endif %}
+
+  <section class="panel">
+    <div class="panel-encabezado"><h3>Historial de esta posición</h3><span class="secundario texto-chico">{{ componente.tipo.nombre|lower }} en {{ componente.vehiculo.identificador }}</span></div>
+    <div class="tabla-contenedor tabla-sin-borde">
+      <table class="tabla">
+        <thead><tr><th>Serie</th><th>Instalada</th><th>Retirada</th><th class="numeros">Uso</th><th>Falla</th></tr></thead>
+        <tbody>
+          {% for p in posicion %}
+            <tr{% if p.pk == componente.pk %} class="fila-actual"{% endif %}>
+              <td>{% if p.pk == componente.pk %}<b class="mono">{{ p.numero_serie|default:"—" }}</b>{% else %}<a href="{% url 'tablero:componente' p.pk %}" class="mono">{{ p.numero_serie|default:"—" }}</a>{% endif %}</td>
+              <td>{{ p.instalado_en|date:"d/m/Y" }}</td>
+              <td>{% if p.retirado_en %}{{ p.retirado_en|date:"d/m/Y" }}{% else %}<span class="etiqueta etiqueta-ok">en uso</span>{% endif %}</td>
+              <td class="numeros">{{ p.porcentaje_vida|floatformat:0 }} %</td>
+              <td>{% for falla in p.fallas.all %}{{ falla.causa|default:"sin causa" }}{% if falla.momento == "TEMPRANA" %} <span class="etiqueta etiqueta-critico">prematura</span>{% endif %}{% empty %}—{% endfor %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {% if ordenes %}
+    <section class="panel">
+      <div class="panel-encabezado"><h3>Órdenes de servicio</h3></div>
+      {% for o in ordenes %}
+        <a class="orden-fila" href="{% url 'tablero:orden' o.pk %}">
+          <div class="orden-principal">
+            <p class="orden-folio"><span class="mono">{{ o.folio }}</span> {% include "tablero/_etapa.html" with etapa=o.etapa %}</p>
+            <p class="alerta-titulo">{{ o.titulo }}</p>
+          </div>
+          <span class="secundario texto-chico">{{ o.creada|date:"d/m/Y" }}</span>
+        </a>
+      {% endfor %}
+    </section>
+  {% endif %}
+
+  {% if puede_corregir %}
+    <details class="ayuda">
+      <summary>Corregir el contador</summary>
+      <form method="post" action="{% url 'tablero:componente_corregir' componente.pk %}" class="formulario panel-cuerpo">
+        {% csrf_token %}
+        <div class="dos-campos">
+          {% include "tablero/_campo.html" with campo=form.ciclos %}
+          {% include "tablero/_campo.html" with campo=form.horas %}
+        </div>
+        {% include "tablero/_campo.html" with campo=form.motivo %}
+        <div><button type="submit" class="btn btn-secundario btn-chico">Guardar corrección</button></div>
+      </form>
+    </details>
+  {% endif %}
+</div>
+{% endblock %}

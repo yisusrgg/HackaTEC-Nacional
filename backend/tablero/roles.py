@@ -3,7 +3,8 @@ from django.contrib.auth.models import Group, Permission
 
 ADMINISTRADOR = "Administrador"
 INGENIERIA = "Ingeniería"
-TECNICO = "Técnico"
+TECNICO = "Técnico"  # técnico de Volvo
+TECNICO_CONVENIO = "Técnico de convenio"  # taller externo: solo sus órdenes asignadas
 
 ROLES = {
     ADMINISTRADOR: [
@@ -27,7 +28,7 @@ ROLES = {
         "auth.change_user",
         "auth.view_group",
     ],
-        INGENIERIA: [
+    INGENIERIA: [
         "telemetria.ver_tablero",
         "telemetria.exportar_datos",
         "auditoria.ver_auditoria",
@@ -36,8 +37,13 @@ ROLES = {
         "servicio.gestionar_ordenes",
         "servicio.validar_ordenes",
         "servicio.ver_analisis",
+        "confiabilidad.ver_confiabilidad",
+        "confiabilidad.gestionar_catalogo",
     ],
     TECNICO: ["telemetria.ver_tablero", "telemetria.atender_alerta", "servicio.gestionar_ordenes"],
+    # Sin ver_tablero: no ve la flota, solo «Mis órdenes» y las unidades de esas órdenes. Lo que registra lo
+    # aprueba Ingeniería antes de que cuente en los análisis.
+    TECNICO_CONVENIO: ["servicio.gestionar_ordenes", "servicio.solo_asignadas"],
 }
 
 

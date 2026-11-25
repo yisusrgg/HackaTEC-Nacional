@@ -23,18 +23,21 @@ from auditoria.servicios import registrar
 from auditoria.utils import ip_de
 
 from .forms_usuarios import FormularioCambiarContrasena, FormularioUsuario
-from .roles import ADMINISTRADOR, INGENIERIA, ROLES, TECNICO
+from .roles import ADMINISTRADOR, INGENIERIA, ROLES, TECNICO, TECNICO_CONVENIO
 from .views import Sev, Tipo, VistaProtegida
 
 Usuario = get_user_model()
 
 # Qué puede hacer cada rol, en palabras (se arma a partir de los permisos de roles.py).
 ACCIONES = [
-    ("telemetria.ver_tablero", "Ver resumen, alertas, autobuses, historial y órdenes"),
+    ("telemetria.ver_tablero", "Ver toda la flota: panorama, unidades, alertas, historial y órdenes"),
+    ("servicio.solo_asignadas", "Ver solo sus órdenes asignadas y las unidades de esas órdenes"),
     ("telemetria.atender_alerta", "Atender y resolver alertas"),
     ("servicio.gestionar_ordenes", "Crear y avanzar órdenes de servicio"),
     ("servicio.validar_ordenes", "Validar, cerrar y cancelar órdenes"),
-    ("servicio.ver_analisis", "Ver el análisis de calidad"),
+    ("servicio.ver_analisis", "Ver los indicadores de servicio"),
+    ("confiabilidad.ver_confiabilidad", "Ver la confiabilidad de componentes y la calidad de los datos"),
+    ("confiabilidad.gestionar_catalogo", "Editar el catálogo de componentes, umbrales y contadores"),
     ("telemetria.exportar_datos", "Exportar datos a CSV"),
     ("telemetria.gestionar_dispositivos", "Generar claves y revocar dispositivos"),
     ("auditoria.ver_auditoria", "Ver la bitácora de seguridad"),
@@ -97,7 +100,7 @@ class UsuariosView(VistaProtegida, ListView):
         contexto = super().get_context_data(**kwargs)
         for usuario in contexto["usuarios"]:
             usuario.rol = rol_de(usuario)
-        columnas = [ADMINISTRADOR, INGENIERIA, TECNICO]
+        columnas = [ADMINISTRADOR, INGENIERIA, TECNICO, TECNICO_CONVENIO]
         matriz = [(texto, [permiso in ROLES[rol] or (permiso == "auth.change_user" and rol == ADMINISTRADOR)
                            for rol in columnas]) for permiso, texto in ACCIONES]
         contexto.update(

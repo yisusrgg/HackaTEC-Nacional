@@ -38,6 +38,9 @@ class EventoSeguridad(models.Model):
         USUARIO_MODIFICADO = "USUARIO_MODIFICADO", "Usuario modificado"
         CONTRASENA_RESTABLECIDA = "CONTRASENA_RESTABLECIDA", "Contraseña restablecida por un administrador"
         CONTRASENA_CAMBIADA = "CONTRASENA_CAMBIADA", "Contraseña cambiada por su dueño"
+        CATALOGO_MODIFICADO = "CATALOGO_MODIFICADO", "Catálogo de componentes o umbral modificado"
+        CONTADOR_CORREGIDO = "CONTADOR_CORREGIDO", "Contador de un componente corregido"
+        ORDEN_APROBACION = "ORDEN_APROBACION", "Trabajo de técnico de convenio aprobado o devuelto"
 
     class Severidad(models.TextChoices):
         INFO = "INFO", "Informativo"

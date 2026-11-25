@@ -11,9 +11,26 @@ from rest_framework.views import APIView
 from auditoria.models import EventoSeguridad
 from telemetria.models import Alerta, Medicion, Nodo, Senal
 
-from .permisos import permiso_drf
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import BasePermission
 
-VerTablero = permiso_drf("telemetria.ver_tablero")
+from .acceso import puede_entrar, puede_ver_unidad
+
+
+class VerTablero(BasePermission):
+    """Toda la flota (telemetria.ver_tablero) o, para el técnico de convenio, las unidades de sus órdenes."""
+
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated and puede_entrar(request.user))
+
+
+def _exigir_nodo(request, nodo):
+    if nodo is None:
+        if not request.user.has_perm("telemetria.ver_tablero"):
+            raise PermissionDenied
+        return
+    if not puede_ver_unidad(request.user, nodo.gateway.vehiculo_id):
+        raise PermissionDenied
 
 
 def nodo_seleccionado(nodo_id, vehiculo=None):
@@ -45,6 +62,7 @@ class EstadoView(APIView):
 
     def get(self, request):
         nodo = nodo_seleccionado(request.query_params.get("nodo"))
+        _exigir_nodo(request, nodo)
         ahora = timezone.now()
         alertas = alertas_del_autobus(nodo.gateway.vehiculo) if nodo else Alerta.objects.filter(estado__in=Alerta.ACTIVAS)
         respuesta = {
@@ -112,6 +130,7 @@ class SerieView(APIView):
     def get(self, request, codigo):
         senal = get_object_or_404(Senal, codigo=codigo)
         nodo = nodo_seleccionado(request.query_params.get("nodo"))
+        _exigir_nodo(request, nodo)
         try:
             minutos = int(request.query_params.get("minutos", 60))
         except ValueError:

@@ -5,7 +5,7 @@
 {% block contenido %}
 <div class="pantalla angosto">
   <div>
-    {% url 'tablero:autobuses' as destino %}{% include "tablero/_regresar.html" with destino=destino %}
+    {% url 'tablero:dispositivos' as destino %}{% include "tablero/_regresar.html" with destino=destino %}
     <p class="rotulo">Provisionar dispositivo</p>
     <h2 class="titulo-pantalla">Clave nueva para {{ dispositivo }}</h2>
   </div>
@@ -40,6 +40,6 @@
     </div>
   </section>
 
-  <div><a href="{% url 'tablero:autobuses' %}?q={% if tipo == 'nodo' %}{{ dispositivo.gateway.vehiculo.identificador|urlencode }}{% else %}{{ dispositivo.vehiculo.identificador|urlencode }}{% endif %}" class="btn btn-primario">Listo, volver al autobús</a></div>
+  <div><a href="{% if tipo == 'nodo' %}{% url 'tablero:ficha' dispositivo.gateway.vehiculo_id %}{% else %}{% url 'tablero:ficha' dispositivo.vehiculo_id %}{% endif %}?pestana=dispositivos" class="btn btn-primario">Listo, volver a la unidad</a></div>
 </div>
 {% endblock %}

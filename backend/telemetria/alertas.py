@@ -19,7 +19,7 @@ class GestorAlertas:
             alerta.mensaje = mensaje[:255]
             alerta.save(update_fields=["ocurrencias", "ultima_vez", "valor", "mensaje"])
             return alerta
-        alerta = Alerta.objects.create(
+        alerta = Alerta(
             clave_dedup=clave,
             tipo=tipo,
             severidad=severidad,
@@ -30,6 +30,10 @@ class GestorAlertas:
             valor=valor,
             ultima_vez=ahora,
         )
+        from confiabilidad import diagnostico  # aquí para evitar una importación circular entre apps
+
+        diagnostico.aplicar(alerta)
+        alerta.save()
         self.activas[clave] = alerta
         return alerta
 

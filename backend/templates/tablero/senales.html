@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block titulo %}Señales y umbrales{% endblock %}
+{% block encabezado %}Señales y umbrales{% endblock %}
+
+{% block contenido %}
+<div class="pantalla">
+  <div class="pantalla-encabezado">
+    <div>
+      <p class="rotulo">Rangos válidos y cuándo se genera una alerta</p>
+      <h2 class="titulo-pantalla">Señales y umbrales</h2>
+    </div>
+  </div>
+
+  <div class="tabla-contenedor">
+    <table class="tabla">
+      <thead>
+        <tr><th>Señal</th><th>Subsistema</th><th class="numeros">Rango válido</th><th class="numeros">Alerta si baja de</th><th class="numeros">Alerta si sube de</th><th>Severidad</th><th><span class="sr-only">Acciones</span></th></tr>
+      </thead>
+      <tbody>
+        {% for s in senales %}
+          <tr>
+            <td>{{ s.nombre }}<small class="bloque secundario mono">{{ s.codigo }}</small></td>
+            <td>{{ s.get_subsistema_display }}</td>
+            <td class="numeros">{% if s.rango_min is not None or s.rango_max is not None %}{% if s.rango_min is not None %}{{ s.rango_min|floatformat:"-2" }}{% else %}…{% endif %} a {% if s.rango_max is not None %}{{ s.rango_max|floatformat:"-2" }}{% else %}…{% endif %} {{ s.unidad }}{% else %}—{% endif %}</td>
+            <td class="numeros">{% if s.umbral_bajo is not None %}{{ s.umbral_bajo|floatformat:"-2" }} {{ s.unidad }}{% else %}—{% endif %}</td>
+            <td class="numeros">{% if s.umbral_alto is not None %}{% if s.tipo == "BOOL" %}se activa{% else %}{{ s.umbral_alto|floatformat:"-2" }} {{ s.unidad }}{% endif %}{% else %}—{% endif %}</td>
+            <td>{% if s.umbral_bajo is not None or s.umbral_alto is not None %}{% include "tablero/_severidad.html" with severidad=s.severidad_alerta %}{% else %}<span class="secundario">sin alerta</span>{% endif %}</td>
+            <td class="derecha"><a href="{% url 'tablero:senal_editar' s.pk %}" class="btn btn-texto btn-chico">Editar</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

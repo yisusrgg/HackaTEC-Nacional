@@ -1,0 +1,11 @@
+{% comment %}Generar clave nueva y revocar/restaurar un gateway o nodo. Uso: include con tipo="gateway"|"nodo" y d=dispositivo.{% endcomment %}<div class="acciones acciones-fila">
+  <form method="post" action="{% url 'tablero:rotar_clave' tipo d.pk %}"
+        data-confirmar="Se generará una clave nueva para {{ d }}. La clave actual deja de servir y tendrás que cargar la nueva en el ESP32 por el monitor serie. ¿Continuar?">
+    {% csrf_token %}<button type="submit" class="btn btn-secundario btn-chico">Clave nueva</button>
+  </form>
+  <form method="post" action="{% url 'tablero:cambiar_estado' tipo d.pk %}"
+        data-confirmar="{% if d.activo %}{{ d }} ya no podrá enviar datos y se rechazará todo lo que mande. ¿Revocar su acceso?{% else %}{{ d }} podrá volver a enviar datos. ¿Restaurar su acceso?{% endif %}">
+    {% csrf_token %}<input type="hidden" name="siguiente" value="{{ request.get_full_path }}">
+    <button type="submit" class="btn btn-chico {% if d.activo %}btn-peligro-borde{% else %}btn-primario{% endif %}">{% if d.activo %}Revocar{% else %}Restaurar{% endif %}</button>
+  </form>
+</div>

@@ -65,11 +65,37 @@ class Cliente(models.Model):
         return self.nombre_comercial
 
 
+class Region(models.TextChoices):
+    """Zona donde opera la unidad. El clima se deduce de la región (ver CLIMA_POR_REGION)."""
+
+    NORTE = "NORTE", "Norte"
+    NORESTE = "NORESTE", "Noreste"
+    OCCIDENTE = "OCCIDENTE", "Occidente y Bajío"
+    CENTRO = "CENTRO", "Centro"
+    GOLFO = "GOLFO", "Golfo"
+    PACIFICO = "PACIFICO", "Pacífico"
+    SURESTE = "SURESTE", "Sureste"
+
+
+CLIMA_POR_REGION = {
+    Region.NORTE: "Seco extremoso",
+    Region.NORESTE: "Seco cálido",
+    Region.OCCIDENTE: "Templado",
+    Region.CENTRO: "Templado",
+    Region.GOLFO: "Cálido húmedo",
+    Region.PACIFICO: "Cálido húmedo",
+    Region.SURESTE: "Cálido húmedo",
+}
+
+
 class Vehiculo(models.Model):
     identificador = models.CharField("número económico o VIN", max_length=40, unique=True)
     nombre = models.CharField(max_length=80)
     cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT, related_name="vehiculos",
                                 help_text="Empresa dueña del autobús. No se puede borrar un cliente que tenga autobuses.")
+    modelo = models.CharField("modelo de autobús", max_length=60, blank=True, db_default="")
+    region = models.CharField("región de operación", max_length=10, choices=Region.choices, blank=True, db_default="")
+    fecha_fabricacion = models.DateField("salida de fábrica", null=True, blank=True)
     creado = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -79,6 +105,10 @@ class Vehiculo(models.Model):
 
     def __str__(self):
         return f"{self.nombre} ({self.identificador})"
+
+    @property
+    def clima(self):
+        return CLIMA_POR_REGION.get(self.region, "")
 
 
 class Dispositivo(models.Model):
@@ -302,6 +332,11 @@ class Alerta(models.Model):
         ATENDIDA = "ATENDIDA", "Atendida"
         RESUELTA = "RESUELTA", "Resuelta"
 
+    class Certeza(models.TextChoices):
+        CONFIRMADO = "CONFIRMADO", "Confirmado"
+        PROBABLE = "PROBABLE", "Probable"
+        SIN_DETERMINAR = "SIN_DETERMINAR", "Sin determinar"
+
     ACTIVAS = (Estado.ABIERTA, Estado.ATENDIDA)
 
     clave_dedup = models.CharField(max_length=120, db_index=True, help_text="Evita alertas duplicadas.")
@@ -322,6 +357,12 @@ class Alerta(models.Model):
     atendida_en = models.DateTimeField(null=True, blank=True)
     nota = models.CharField(max_length=255, blank=True)
     resuelta_en = models.DateTimeField(null=True, blank=True)
+    tomada_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                   related_name="alertas_tomadas",
+                                   help_text="Quién la está trabajando, para que otro ingeniero no la repita.")
+    tomada_en = models.DateTimeField(null=True, blank=True)
+    diagnostico = models.CharField("diagnóstico probable", max_length=255, blank=True, default="")
+    certeza = models.CharField(max_length=14, choices=Certeza.choices, blank=True, default="")
 
     class Meta:
         verbose_name = "alerta"
@@ -335,3 +376,9 @@ class Alerta(models.Model):
     @property
     def activa(self) -> bool:
         return self.estado in self.ACTIVAS
+
+    @property
+    def vehiculo(self):
+        """Unidad de la alerta: la de su gateway o la del gateway de su nodo (None si no tiene)."""
+        gateway = self.gateway if self.gateway_id else (self.nodo.gateway if self.nodo_id else None)
+        return gateway.vehiculo if gateway else None

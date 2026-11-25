@@ -2,7 +2,8 @@
 Procesamiento de los lotes que manda el gateway.
 
 Por cada trama: identifica el nodo, reconstruye el contador, verifica el MAC (integridad extremo a extremo
-desde el nodo), descifra, decodifica con el catálogo, guarda las mediciones y evalúa alertas.
+desde el nodo), descifra, decodifica con el catálogo, guarda las mediciones, suma ciclos y horas a los componentes
+instalados y evalúa alertas.
 """
 import hashlib
 from dataclasses import dataclass
@@ -103,6 +104,9 @@ class _ProcesadorLote:
             else:
                 rechazadas += 1
         Medicion.objects.bulk_create(self.mediciones)
+        from confiabilidad.conteo import contar  # aquí para evitar una importación circular entre apps
+
+        contar(self.mediciones)  # ciclos y horas de los componentes instalados
         for nodo in self.nodos_modificados.values():
             nodo.save(update_fields=["ultimo_contador", "ultimo_contacto", "tramas_recibidas",
                                      "tramas_perdidas", "tramas_rechazadas", "reinicios"])

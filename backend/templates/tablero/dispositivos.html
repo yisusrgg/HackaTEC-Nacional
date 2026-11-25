@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block titulo %}Dispositivos{% endblock %}
+{% block encabezado %}Dispositivos{% endblock %}
+
+{% block contenido %}
+<div class="pantalla">
+  <div class="pantalla-encabezado">
+    <div>
+      <p class="rotulo">Gateways y nodos de sensores de toda la flota</p>
+      <h2 class="titulo-pantalla">Dispositivos</h2>
+    </div>
+  </div>
+
+  <form method="get" class="panel panel-cuerpo filtros" aria-label="Filtros de dispositivos">
+    <div class="campo-grupo">
+      <label for="filtro-q">Buscar</label>
+      <input id="filtro-q" type="search" name="q" class="campo" value="{{ q }}" maxlength="40" placeholder="Unidad o gateway" data-autoenviar-texto>
+    </div>
+    <div class="campo-grupo">
+      <label for="filtro-estado">Mostrar</label>
+      <select id="filtro-estado" name="estado" class="campo" data-autoenviar>
+        {% for valor, etiqueta in opciones_estado %}<option value="{{ valor }}"{% if valor == estado %} selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="campo-grupo">
+      <label for="filtro-operador">Operador</label>
+      <select id="filtro-operador" name="operador" class="campo" data-autoenviar>
+        <option value="">Todos</option>
+        {% for c in operadores %}<option value="{{ c.pk }}"{% if f.operador and c.pk == f.operador.pk %} selected{% endif %}>{{ c.nombre_comercial }}</option>{% endfor %}
+      </select>
+    </div>
+    {% if hay_filtros %}<div class="acciones"><a href="{% url 'tablero:dispositivos' %}" class="btn btn-texto">Quitar filtros</a></div>{% endif %}
+  </form>
+
+  <p class="contador-resultados">{{ total }} dispositivo{{ total|pluralize }}</p>
+
+  <div class="tabla-contenedor">
+    <table class="tabla">
+      <thead><tr><th>Unidad</th><th>Dispositivo</th><th>Firmware</th><th class="numeros">Antigüedad de la clave</th><th>Último contacto</th><th>Estado</th><th><span class="sr-only">Acciones</span></th></tr></thead>
+      <tbody>
+        {% for fila in filas %}
+          {% with d=fila.d %}
+          <tr>
+            <td><a href="{% url 'tablero:ficha' fila.vehiculo.pk %}?pestana=dispositivos" class="mono">{{ fila.vehiculo.identificador }}</a><small class="bloque secundario">{{ fila.vehiculo.cliente.nombre_comercial }}</small></td>
+            <td>{% if fila.tipo == "gateway" %}<span class="etiqueta etiqueta-rol">Gateway</span>{% else %}<span class="etiqueta etiqueta-rol">Nodo</span>{% endif %} <span class="mono">{{ fila.nombre }}</span></td>
+            <td class="mono">{{ fila.firmware|default:"—" }}</td>
+            <td class="numeros{% if fila.dias_clave is None or fila.dias_clave > 90 %} texto-aviso{% endif %}">{% if fila.dias_clave is not None %}{{ fila.dias_clave }} día{{ fila.dias_clave|pluralize }}{% else %}sin fecha{% endif %}</td>
+            <td class="secundario">{{ d.ultimo_contacto|naturaltime|default:"nunca" }}</td>
+            <td>{% if not d.activo %}<span class="etiqueta etiqueta-critico">Revocado</span>{% elif d.en_linea %}<span class="etiqueta etiqueta-ok">En línea</span>{% else %}<span class="etiqueta etiqueta-apagado">Sin contacto</span>{% endif %}</td>
+            <td class="derecha">{% include "tablero/_acciones_dispositivo.html" with tipo=fila.tipo %}</td>
+          </tr>
+          {% endwith %}
+        {% empty %}
+          <tr><td colspan="7" class="lista-vacia">Ningún dispositivo coincide con los filtros.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% include "tablero/_paginacion.html" %}
+</div>
+{% endblock %}

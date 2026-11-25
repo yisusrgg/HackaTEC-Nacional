@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block titulo %}{{ vehiculo.identificador }}{% endblock %}
+{% block encabezado %}Ficha de la unidad{% endblock %}
+
+{% block contenido %}
+<div class="pantalla">
+  {% include "tablero/_ficha_encabezado.html" %}
+
+  {% if pestana == "resumen" %}
+    <dl class="ficha">
+      <div><dt>Operador</dt><dd>{{ vehiculo.cliente.nombre_comercial }}<small>{{ vehiculo.cliente.get_segmento_display|default:"" }}</small></dd></div>
+      <div><dt>Modelo</dt><dd>{{ vehiculo.modelo|default:"—" }}<small>{% if vehiculo.fecha_fabricacion %}salió de fábrica en {{ vehiculo.fecha_fabricacion|date:"F Y" }}{% else %}sin fecha de fábrica{% endif %}</small></dd></div>
+      <div><dt>Región</dt><dd>{{ vehiculo.get_region_display|default:"—" }}<small>{{ vehiculo.clima|default:"clima sin dato" }}</small></dd></div>
+      <div><dt>Conexión</dt><dd>
+        {% if estado.conexion == "en_linea" %}<span class="etiqueta etiqueta-ok">En línea</span>
+        {% elif estado.conexion == "sin_senal" %}<span class="etiqueta etiqueta-apagado">Sin señal</span>
+        {% elif estado.conexion == "sin_conectar" %}<span class="etiqueta etiqueta-apagado">Nunca se ha conectado</span>
+        {% elif estado.conexion == "revocado" %}<span class="etiqueta etiqueta-critico">Acceso revocado</span>
+        {% else %}<span class="etiqueta etiqueta-apagado">Sin dispositivo</span>{% endif %}
+        <small>{% if estado.ultimo_contacto %}última señal {{ estado.ultimo_contacto|naturaltime }}{% else %}sin datos recibidos{% endif %}</small></dd></div>
+    </dl>
+
+    <div class="dos-columnas dos-columnas-iguales">
+      <section class="panel">
+        <div class="panel-encabezado">
+          <h3>Alertas activas</h3>
+          {% if perms.telemetria.ver_tablero %}<a href="{% url 'tablero:alertas' %}?autobus={{ vehiculo.pk }}" class="enlace-discreto">Ver todas</a>{% endif %}
+        </div>
+        <div class="lista-alertas">
+          {% for a in alertas %}
+            <div class="alerta-fila">
+              <div>{% include "tablero/_severidad.html" with severidad=a.severidad %}</div>
+              <div>
+                <p class="alerta-mensaje">{{ a.mensaje }}</p>
+                {% if a.diagnostico %}<p class="alerta-meta">{% include "tablero/_certeza.html" with certeza=a.certeza %} {{ a.diagnostico }}</p>{% endif %}
+                <p class="alerta-meta">{{ a.ultima_vez|naturaltime }}{% if a.tomada_por %} · la trabaja {{ a.tomada_por.get_username }}{% endif %}</p>
+              </div>
+            </div>
+          {% empty %}
+            <p class="lista-vacia">Sin alertas activas.</p>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-encabezado"><h3>Componentes más gastados</h3><a href="?pestana=componentes" class="enlace-discreto">Ver todos</a></div>
+        {% if componentes %}
+          <ul class="barras barras-vida">
+            {% for c in componentes|slice:":4" %}
+              <li>
+                <span class="barras-nombre"><a href="{% url 'tablero:componente' c.pk %}">{{ c.tipo.nombre }}</a><small>serie {{ c.numero_serie|default:"—" }}</small></span>
+                {% include "tablero/_vida.html" with componente=c %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}<p class="lista-vacia">Esta unidad no tiene componentes registrados.</p>{% endif %}
+      </section>
+    </div>
+
+    <section class="panel">
+      <div class="panel-encabezado">
+        <h3>Órdenes abiertas</h3>
+        {% if perms.servicio.gestionar_ordenes and perms.telemetria.ver_tablero %}<a href="{% url 'tablero:orden_nueva' %}?vehiculo={{ vehiculo.pk }}" class="btn btn-secundario btn-chico">Nueva orden</a>{% endif %}
+      </div>
+      {% include "tablero/_ordenes_lista.html" %}
+    </section>
+
+    {% if perms.telemetria.ver_tablero %}
+      <p class="secundario texto-chico"><a href="{% url 'tablero:historial' %}?autobus={{ vehiculo.pk }}" class="enlace-discreto">Ver el historial de datos de esta unidad</a></p>
+    {% endif %}
+
+  {% elif pestana == "componentes" %}
+    <div class="tabla-contenedor">
+      <table class="tabla">
+        <thead><tr><th>Componente</th><th>Serie</th><th>Instalado</th><th>Uso</th><th>Vida consumida</th></tr></thead>
+        <tbody>
+          {% for c in componentes %}
+            <tr>
+              <td><a href="{% url 'tablero:componente' c.pk %}" class="usuario-nombre"><b>{{ c.tipo.nombre }}</b></a><small class="bloque secundario">{{ c.tipo.get_subsistema_display }} · {{ c.tipo.get_medicion_display|lower }}</small></td>
+              <td class="mono">{{ c.numero_serie|default:"—" }}</td>
+              <td>{{ c.instalado_en|date:"d/m/Y" }}</td>
+              <td class="numeros">{{ c.ciclos|intcomma }} ciclos{% if c.horas %}<small class="bloque secundario">{{ c.horas|floatformat:0|intcomma }} h</small>{% endif %}</td>
+              <td class="celda-vida">{% include "tablero/_vida.html" with componente=c %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="lista-vacia">Esta unidad no tiene componentes registrados.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  {% elif pestana == "fallas" %}
+    <section class="panel">
+      <div class="panel-encabezado"><h3>Fallas de componentes</h3></div>
+      <div class="tabla-contenedor tabla-sin-borde">
+        <table class="tabla">
+          <thead><tr><th>Fecha</th><th>Componente</th><th class="numeros">% garantía</th><th>Causa</th><th>Estado</th><th>Orden</th></tr></thead>
+          <tbody>
+            {% for falla in fallas %}
+              <tr>
+                <td>{{ falla.fecha|date:"d/m/Y" }}</td>
+                <td><a href="{% url 'tablero:componente' falla.componente_id %}">{{ falla.componente.tipo.nombre }}</a><small class="bloque secundario mono">{{ falla.componente.numero_serie }}</small></td>
+                <td class="numeros">{% if falla.momento == "TEMPRANA" %}<span class="etiqueta etiqueta-critico">{{ falla.porcentaje_garantia|floatformat:0 }} %</span>{% else %}{{ falla.porcentaje_garantia|floatformat:0 }} %{% endif %}</td>
+                <td>{{ falla.causa|default:"—" }}</td>
+                <td>{% if falla.confirmada %}<span class="etiqueta etiqueta-ok">Confirmada</span>{% else %}<span class="etiqueta etiqueta-apagado">Sin confirmar</span>{% endif %}</td>
+                <td>{% if falla.orden %}<a href="{% url 'tablero:orden' falla.orden.pk %}" class="mono">{{ falla.orden.folio }}</a>{% else %}<span class="secundario">histórico</span>{% endif %}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="6" class="lista-vacia">Esta unidad no tiene fallas registradas.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-encabezado"><h3>Órdenes de servicio</h3></div>
+      {% include "tablero/_ordenes_lista.html" %}
+    </section>
+
+  {% elif pestana == "dispositivos" %}
+    {% include "tablero/_dispositivos_unidad.html" %}
+  {% endif %}
+</div>
+{% endblock %}

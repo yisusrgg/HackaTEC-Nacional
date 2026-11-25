@@ -1,38 +1,46 @@
 {% with actual=request.resolver_match.url_name %}
 {% if perms.telemetria.ver_tablero %}
-  <p class="menu-grupo">Monitoreo</p>
-    <a href="{% url 'tablero:resumen' %}" class="menu-enlace{% if actual == 'resumen' %} activo{% endif %}"{% if actual == 'resumen' %} aria-current="page"{% endif %}>
-      Resumen
-    </a>
-    <a href="{% url 'tablero:alertas' %}" class="menu-enlace{% if actual == 'alertas' %} activo{% endif %}"{% if actual == 'alertas' %} aria-current="page"{% endif %}>
-      Alertas
-    </a>
-    <a href="{% url 'tablero:autobuses' %}" class="menu-enlace{% if actual == 'autobuses' or actual == 'monitoreo' or actual == 'senal' %} activo{% endif %}"{% if actual == 'autobuses' or actual == 'monitoreo' or actual == 'senal' %} aria-current="page"{% endif %}>
-      Autobuses
-    </a>
-    <a href="{% url 'tablero:historial' %}" class="menu-enlace{% if actual == 'historial' %} activo{% endif %}"{% if actual == 'historial' %} aria-current="page"{% endif %}>
-      Historial de datos
-    </a>
+  <p class="menu-grupo">Flota</p>
+  <a href="{% url 'tablero:panorama' %}" class="menu-enlace{% if actual == 'panorama' or actual == 'resumen' %} activo{% endif %}"{% if actual == 'panorama' %} aria-current="page"{% endif %}>Panorama</a>
+  {% if perms.confiabilidad.ver_confiabilidad %}
+    <a href="{% url 'tablero:confiabilidad' %}" class="menu-enlace{% if actual == 'confiabilidad' or actual == 'componente_tipo' %} activo{% endif %}"{% if actual == 'confiabilidad' %} aria-current="page"{% endif %}>Confiabilidad</a>
+    <a href="{% url 'tablero:calidad' %}" class="menu-enlace{% if actual == 'calidad' %} activo{% endif %}"{% if actual == 'calidad' %} aria-current="page"{% endif %}>Calidad de los datos</a>
+  {% endif %}
+  {% if perms.servicio.ver_analisis %}
+    <a href="{% url 'tablero:analisis' %}" class="menu-enlace{% if actual == 'analisis' %} activo{% endif %}"{% if actual == 'analisis' %} aria-current="page"{% endif %}>Indicadores de servicio</a>
+  {% endif %}
+
+  <p class="menu-grupo">Unidades</p>
+  <a href="{% url 'tablero:autobuses' %}" class="menu-enlace{% if actual == 'autobuses' or actual == 'ficha' or actual == 'monitoreo' or actual == 'senal' or actual == 'componente' %} activo{% endif %}"{% if actual == 'autobuses' %} aria-current="page"{% endif %}>Unidades</a>
+  <a href="{% url 'tablero:historial' %}" class="menu-enlace{% if actual == 'historial' %} activo{% endif %}"{% if actual == 'historial' %} aria-current="page"{% endif %}>Historial de datos</a>
+
   <p class="menu-grupo">Servicio</p>
-    <a href="{% url 'tablero:ordenes' %}" class="menu-enlace{% if actual == 'ordenes' or actual == 'orden' or actual == 'orden_nueva' %} activo{% endif %}"{% if actual == 'ordenes' or actual == 'orden' or actual == 'orden_nueva' %} aria-current="page"{% endif %}>
-      Órdenes de servicio
-    </a>
+  <a href="{% url 'tablero:alertas' %}" class="menu-enlace{% if actual == 'alertas' %} activo{% endif %}"{% if actual == 'alertas' %} aria-current="page"{% endif %}>Alertas</a>
+  <a href="{% url 'tablero:ordenes' %}" class="menu-enlace{% if actual == 'ordenes' or actual == 'orden' or actual == 'orden_nueva' %} activo{% endif %}"{% if actual == 'ordenes' %} aria-current="page"{% endif %}>Órdenes de servicio</a>
+{% elif perms.servicio.solo_asignadas %}
+  <p class="menu-grupo">Servicio</p>
+  <a href="{% url 'tablero:ordenes' %}" class="menu-enlace{% if actual == 'ordenes' or actual == 'orden' %} activo{% endif %}"{% if actual == 'ordenes' %} aria-current="page"{% endif %}>Mis órdenes</a>
+  <a href="{% url 'tablero:autobuses' %}" class="menu-enlace{% if actual == 'autobuses' or actual == 'ficha' or actual == 'monitoreo' or actual == 'senal' or actual == 'componente' %} activo{% endif %}"{% if actual == 'autobuses' %} aria-current="page"{% endif %}>Mis unidades</a>
 {% endif %}
-{% if perms.servicio.ver_analisis %}
-  <p class="menu-grupo">Análisis</p>
-  <a href="{% url 'tablero:analisis' %}" class="menu-enlace{% if actual == 'analisis' %} activo{% endif %}"{% if actual == 'analisis' %} aria-current="page"{% endif %}>Análisis de calidad</a>
+
+{% if perms.confiabilidad.gestionar_catalogo or perms.telemetria.gestionar_dispositivos or perms.auditoria.ver_auditoria or perms.auth.view_user or user.is_staff %}
+  <p class="menu-grupo">Administración</p>
 {% endif %}
-{% if perms.auditoria.ver_auditoria or perms.auth.view_user or user.is_staff %}
-  <p class="menu-grupo">Seguridad y sistema</p>
+{% if perms.confiabilidad.gestionar_catalogo %}
+  <a href="{% url 'tablero:catalogo' %}" class="menu-enlace{% if actual == 'catalogo' or actual == 'catalogo_nuevo' or actual == 'catalogo_editar' %} activo{% endif %}"{% if actual == 'catalogo' %} aria-current="page"{% endif %}>Catálogo de componentes</a>
+  <a href="{% url 'tablero:senales' %}" class="menu-enlace{% if actual == 'senales' or actual == 'senal_editar' %} activo{% endif %}"{% if actual == 'senales' %} aria-current="page"{% endif %}>Señales y umbrales</a>
 {% endif %}
-{% if perms.auditoria.ver_auditoria %}
-  <a href="{% url 'tablero:seguridad' %}" class="menu-enlace{% if actual == 'seguridad' %} activo{% endif %}"{% if actual == 'seguridad' %} aria-current="page"{% endif %}>Bitácora de seguridad</a>
+{% if perms.telemetria.gestionar_dispositivos %}
+  <a href="{% url 'tablero:dispositivos' %}" class="menu-enlace{% if actual == 'dispositivos' %} activo{% endif %}"{% if actual == 'dispositivos' %} aria-current="page"{% endif %}>Dispositivos</a>
 {% endif %}
 {% if perms.auth.view_user %}
   <a href="{% url 'tablero:usuarios' %}" class="menu-enlace{% if actual == 'usuarios' or actual == 'usuario_nuevo' or actual == 'usuario_editar' %} activo{% endif %}"{% if actual == 'usuarios' or actual == 'usuario_nuevo' or actual == 'usuario_editar' %} aria-current="page"{% endif %}>Usuarios y roles</a>
 {% endif %}
+{% if perms.auditoria.ver_auditoria %}
+  <a href="{% url 'tablero:seguridad' %}" class="menu-enlace{% if actual == 'seguridad' %} activo{% endif %}"{% if actual == 'seguridad' %} aria-current="page"{% endif %}>Bitácora de seguridad</a>
+{% endif %}
 {% if user.is_staff %}
-  <a href="{% url 'admin:index' %}" class="menu-enlace">Administración</a>
+  <a href="{% url 'admin:index' %}" class="menu-enlace">Panel de Django</a>
 {% endif %}
 <p class="menu-grupo">Cuenta</p>
 <a href="{% url 'cuentas:contrasena' %}" class="menu-enlace{% if actual == 'contrasena' %} activo{% endif %}"{% if actual == 'contrasena' %} aria-current="page"{% endif %}>Mi cuenta</a>

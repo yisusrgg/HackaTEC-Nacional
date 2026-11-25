@@ -23,6 +23,14 @@ class OrdenServicio(models.Model):
         VALIDADA_MANUAL = "VALIDADA_MANUAL", "Cerrada manualmente"
         CANCELADA = "CANCELADA", "Cancelada"
 
+    class Aprobacion(models.TextChoices):
+        """Lo que registra un técnico de convenio lo revisa Ingeniería antes de que la falla cuente."""
+
+        NO_REQUIERE = "NO_REQUIERE", "No requiere"
+        PENDIENTE = "PENDIENTE", "Por validar por Ingeniería"
+        APROBADA = "APROBADA", "Aprobada por Ingeniería"
+        DEVUELTA = "DEVUELTA", "Devuelta al técnico"
+
     ABIERTAS = (Etapa.DIAGNOSTICO, Etapa.REPARACION, Etapa.VALIDACION)
     PASOS = (Etapa.DIAGNOSTICO, Etapa.REPARACION, Etapa.VALIDACION, Etapa.CERRADA)
 
@@ -56,6 +64,13 @@ class OrdenServicio(models.Model):
                                              help_text="Momento en que se terminó la reparación.")
     intentos = models.PositiveSmallIntegerField(default=0, editable=False,
                                                 help_text="Veces que la falla volvió durante la validación.")
+    componente = models.ForeignKey("confiabilidad.ComponenteInstalado", on_delete=models.SET_NULL, null=True,
+                                   blank=True, related_name="ordenes", verbose_name="componente afectado")
+    causa = models.ForeignKey("confiabilidad.Causa", on_delete=models.SET_NULL, null=True, blank=True,
+                              related_name="ordenes", verbose_name="causa de la falla")
+    diagnostico_confirmado = models.BooleanField(
+        null=True, blank=True, help_text="Si el técnico confirmó (sí) o rechazó (no) el diagnóstico del sistema.")
+    aprobacion = models.CharField(max_length=12, choices=Aprobacion.choices, default=Aprobacion.NO_REQUIERE)
     creada = models.DateTimeField(auto_now_add=True)
     actualizada = models.DateTimeField(auto_now=True)
     cerrada_en = models.DateTimeField(null=True, blank=True, editable=False)
@@ -68,6 +83,7 @@ class OrdenServicio(models.Model):
             ("gestionar_ordenes", "Puede crear y avanzar órdenes de servicio"),
             ("validar_ordenes", "Puede validar, cerrar y cancelar órdenes de servicio"),
             ("ver_analisis", "Puede ver el análisis de calidad"),
+            ("solo_asignadas", "Solo ve las órdenes que tiene asignadas y las unidades de esas órdenes"),
         ]
 
     def __str__(self):

@@ -777,3 +777,80 @@ textarea.campo { resize: vertical; }
 .pendientes .pendiente-info { box-shadow: inset 3px 0 0 var(--enlace); }
 
 .titulo-con-filtro { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+
+
+/* ---------- 30. Confiabilidad: piezas comunes ---------- */
+.bloque { display: block; }
+.texto-ok { color: var(--ok); }
+.texto-critico { color: var(--critico); }
+.tabla-sin-borde { border: 0; border-radius: 0; }
+.fila-actual td { background: var(--niebla); }
+.casilla { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--grafito); cursor: pointer; }
+.casilla input { width: 16px; height: 16px; accent-color: var(--tinta); }
+.campo-fijo { background: var(--niebla); color: var(--grafito); }
+.formulario-sin-borde { border-bottom: 0; }
+.panel-destacado { border-color: var(--aviso); box-shadow: inset 3px 0 0 var(--aviso); }
+.acciones-fila { display: inline-flex; flex-wrap: nowrap; gap: 6px; justify-content: flex-end; }
+.acciones-fila form { margin: 0; }
+.dos-columnas-iguales { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.pendiente-texto { display: grid; gap: 4px; min-width: 0; }
+.pendientes li a { color: var(--tinta); }
+.alerta-diagnostico { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; font-size: 13px; color: var(--grafito); }
+
+/* Seis indicadores en dos filas de tres */
+.indicadores-dos-filas .indicador { border-bottom: 1px solid var(--linea); }
+.indicadores-dos-filas .indicador:nth-child(3n) { border-right: 0; }
+.indicadores-dos-filas .indicador:nth-last-child(-n + 3) { border-bottom: 0; }
+
+/* Pestañas de la ficha de la unidad */
+.pestanas { display: flex; flex-wrap: wrap; gap: 4px; margin-top: -12px; border-bottom: 1px solid var(--linea); }
+.pestanas a {
+  padding: 10px 16px; margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  color: var(--gris); font-size: 14px; font-weight: 500; text-decoration: none;
+}
+.pestanas a:hover { color: var(--tinta); }
+.pestanas a.activo { color: var(--tinta); border-bottom-color: var(--tinta); }
+
+/* Barras de vida: verde hasta 80 %, ámbar cerca del límite, rojo pasada la garantía */
+.barra.vida-ok::-webkit-progress-value { background: var(--ok); }
+.barra.vida-ok::-moz-progress-bar { background: var(--ok); }
+.barra.vida-cerca::-webkit-progress-value { background: var(--aviso); }
+.barra.vida-cerca::-moz-progress-bar { background: var(--aviso); }
+.barra.vida-vencido::-webkit-progress-value { background: var(--critico); }
+.barra.vida-vencido::-moz-progress-bar { background: var(--critico); }
+.barras-vida li { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 140px; }
+.barras-grande .barra { height: 14px; }
+.barras a { color: var(--tinta); text-underline-offset: 3px; }
+.celda-vida { min-width: 220px; }
+.celda-vida .barra { margin: 4px 0; }
+.celda-vida .barras-valor { display: block; text-align: left; font-size: 13px; }
+.celda-vida .barras-valor small { display: inline; margin-left: 6px; }
+
+/* Vida a la falla contra la garantía: la escala llega a 150 % y la línea marca el 100 % */
+.celda-barra { min-width: 200px; }
+.garantia { position: relative; display: block; margin-bottom: 4px; }
+.garantia::after {
+  content: ""; position: absolute; top: -3px; bottom: -3px; left: 66.66%;
+  width: 2px; background: var(--tinta);
+}
+
+/* Histograma: los tramos después de la garantía, más tenues */
+.histograma .tras-garantia { color: var(--gris); }
+
+/* Mapa de calor: fallas por cada 100 unidades */
+.tabla-calor td, .tabla-calor th { white-space: nowrap; }
+.tabla-calor .calor-0 { color: var(--gris-claro); }
+.tabla-calor .calor-1 { background: color-mix(in srgb, var(--critico) 8%, transparent); }
+.tabla-calor .calor-2 { background: color-mix(in srgb, var(--critico) 18%, transparent); }
+.tabla-calor .calor-3 { background: color-mix(in srgb, var(--critico) 32%, transparent); font-weight: 600; }
+.tabla-calor .calor-4 { background: color-mix(in srgb, var(--critico) 50%, transparent); color: var(--papel); font-weight: 600; }
+
+.tabla-unidades td { vertical-align: middle; }
+
+@media (max-width: 900px) {
+  .dos-columnas-iguales { grid-template-columns: 1fr; }
+  .indicadores-dos-filas .indicador { border-right: 0; border-bottom: 1px solid var(--linea); }
+  .barras-vida li { grid-template-columns: 1fr 130px; }
+  .barras-vida .barra { grid-column: 1 / -1; grid-row: 2; }
+}

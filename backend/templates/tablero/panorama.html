@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% load static humanize %}
+{% block titulo %}Panorama{% endblock %}
+{% block encabezado %}Panorama de la flota{% endblock %}
+
+{% block contenido %}
+<div class="pantalla">
+  <div class="pantalla-encabezado">
+    <div>
+      <p class="rotulo">{% if f.operador %}{{ f.operador.nombre_comercial }}{% else %}Toda la flota{% endif %}{% if f.region %} · {{ f.region }}{% endif %}{% if f.modelo %} · {{ f.modelo }}{% endif %}</p>
+      <h2 class="titulo-pantalla">Panorama</h2>
+    </div>
+    <div class="pantalla-acciones">
+      <a href="{% url 'tablero:resumen' %}" class="enlace-discreto">Flota por operador</a>
+      <span class="en-vivo">Actualizado {% now "H:i" %}</span>
+    </div>
+  </div>
+
+  {% include "tablero/_filtros_flota.html" %}
+
+  {% with i=datos.indicadores %}
+  <div class="indicadores indicadores-3 indicadores-dos-filas">
+    <a class="indicador indicador-enlace" href="{% url 'tablero:calidad' %}{% if q %}?{{ q }}{% endif %}">
+      <p class="rotulo">Unidades reportando (24 h)</p>
+      <p class="cifra">{{ i.reportando }} <small>de {{ i.total }}</small></p>
+      <p class="indicador-detalle">{% if i.validas is not None %}{{ i.validas }} % de lecturas válidas{% else %}sin lecturas en 24 h{% endif %}</p>
+    </a>
+    <a class="indicador indicador-enlace" href="{% url 'tablero:alertas' %}?severidad=CRITICA&amp;tomada=no{% if q %}&amp;{{ q }}{% endif %}">
+      <p class="rotulo">Alertas críticas sin tomar</p>
+      <p class="cifra{% if i.criticas_sin_tomar %} cifra-critico{% endif %}">{{ i.criticas_sin_tomar }}</p>
+      <p class="indicador-detalle">{{ i.activas }} alerta{{ i.activas|pluralize }} activa{{ i.activas|pluralize }} en total</p>
+    </a>
+    <a class="indicador indicador-enlace" href="{% url 'tablero:autobuses' %}?componente=cerca{% if q %}&amp;{{ q }}{% endif %}">
+      <p class="rotulo">Componentes arriba del 80 % de vida</p>
+      <p class="cifra{% if i.cerca %} cifra-aviso{% endif %}">{{ i.cerca }}</p>
+      <p class="indicador-detalle">ciclos u horas contra la garantía</p>
+    </a>
+    <a class="indicador indicador-enlace" href="{% url 'tablero:confiabilidad' %}?dias=90{% if q %}&amp;{{ q }}{% endif %}">
+      <p class="rotulo">Fallas prematuras (30 días)</p>
+      <p class="cifra{% if i.prematuras_mes %} cifra-critico{% endif %}">{{ i.prematuras_mes }}</p>
+      <p class="indicador-detalle">antes del límite de su garantía</p>
+    </a>
+    <a class="indicador indicador-enlace" href="{% url 'tablero:ordenes' %}?estado=abiertas">
+      <p class="rotulo">Órdenes en validación</p>
+      <p class="cifra">{{ i.en_validacion }}</p>
+      <p class="indicador-detalle">se cierran solas si los datos confirman la reparación</p>
+    </a>
+    <a class="indicador indicador-enlace" href="{% url 'tablero:ordenes' %}?estado=por_validar">
+      <p class="rotulo">Por validar por Ingeniería</p>
+      <p class="cifra{% if i.por_aprobar %} cifra-aviso{% endif %}">{{ i.por_aprobar }}</p>
+      <p class="indicador-detalle">trabajos de técnicos de convenio</p>
+    </a>
+  </div>
+  {% endwith %}
+
+  <div class="dos-columnas dos-columnas-iguales">
+    <section class="panel">
+      <div class="panel-encabezado">
+        <h3>Atención ahora</h3>
+        <a href="{% url 'tablero:alertas' %}?severidad=CRITICA&amp;tomada=no{% if q %}&amp;{{ q }}{% endif %}" class="enlace-discreto">Ver alertas</a>
+      </div>
+      {% if datos.atencion %}
+        <ul class="pendientes">
+          {% for a in datos.atencion %}
+            {% with v=a.vehiculo %}
+            <li class="pendiente-critico">
+              <div class="pendiente-texto">
+                <p>{{ a.mensaje }}</p>
+                <p class="alerta-meta">{% if v %}<a href="{% url 'tablero:ficha' v.pk %}" class="mono">{{ v.identificador }}</a> · {{ v.cliente.nombre_comercial }} · {% endif %}desde {{ a.creada|naturaltime }}</p>
+                {% if a.diagnostico %}<p class="alerta-meta">{% include "tablero/_certeza.html" with certeza=a.certeza %} {{ a.diagnostico }}</p>{% endif %}
+              </div>
+            </li>
+            {% endwith %}
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="lista-vacia">No hay alertas críticas sin tomar. Abajo, los componentes más cerca de su límite.</p>
+      {% endif %}
+    </section>
+
+    <section class="panel">
+      <div class="panel-encabezado">
+        <h3>Más cerca de su límite</h3>
+        <a href="{% url 'tablero:autobuses' %}?componente=cerca{% if q %}&amp;{{ q }}{% endif %}" class="enlace-discreto">Ver unidades</a>
+      </div>
+      {% if datos.cerca_del_limite %}
+        <ul class="barras barras-vida">
+          {% for c in datos.cerca_del_limite %}
+            <li>
+              <span class="barras-nombre"><a href="{% url 'tablero:componente' c.pk %}">{{ c.tipo.nombre }}</a><small><span class="mono">{{ c.vehiculo.identificador }}</span> · {{ c.vehiculo.cliente.nombre_comercial }}</small></span>
+              {% include "tablero/_vida.html" with componente=c %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="lista-vacia">Ningún componente pasa del 50 % de su vida.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="panel-encabezado">
+      <h3>Fallas confirmadas por semana</h3>
+      <span class="secundario texto-chico">últimas 12 semanas, por subsistema</span>
+    </div>
+    <div class="panel-cuerpo">
+      {% if grafica.series %}
+        <div class="grafica grafica-chica"><canvas id="grafica-fallas" role="img" aria-label="Fallas confirmadas por semana y subsistema"></canvas></div>
+        {{ grafica|json_script:"datos-panorama" }}
+      {% else %}
+        <p class="lista-vacia">Sin fallas confirmadas en las últimas 12 semanas.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-encabezado">
+      <h3>Fallas por cada 100 unidades</h3>
+      <span class="secundario texto-chico">subsistema por operador · {{ f.dias }} días</span>
+    </div>
+    <div class="tabla-contenedor tabla-sin-borde">
+      <table class="tabla tabla-calor">
+        <thead>
+          <tr>
+            <th>Subsistema</th>
+            {% for o in datos.calor.operadores %}<th class="centro" title="{{ o.unidades }} unidad{{ o.unidades|pluralize:'es' }}">{{ o.nombre }}</th>{% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for fila in datos.calor.filas %}
+            <tr>
+              <td>{{ fila.nombre }}</td>
+              {% for c in fila.celdas %}
+                <td class="centro calor-{{ c.nivel }}" title="{{ c.fallas }} falla{{ c.fallas|pluralize }}">{% if c.fallas %}{{ c.tasa }}{% else %}—{% endif %}</td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'vendor/chart.umd.js' %}"></script>
+<script src="{% static 'js/panorama.js' %}"></script>
+{% endblock %}

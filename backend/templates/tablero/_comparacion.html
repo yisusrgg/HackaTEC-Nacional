@@ -1,0 +1,18 @@
+<div class="tabla-contenedor tabla-sin-borde">
+  <table class="tabla">
+    <thead><tr><th>Grupo</th><th class="numeros">Unidades</th><th class="numeros">Fallas</th><th class="numeros" title="Fallas por cada 100 unidades">Por cada 100</th><th class="numeros">Prematuras</th></tr></thead>
+    <tbody>
+      {% for c in filas %}
+        <tr>
+          <td>{{ c.grupo }}</td>
+          <td class="numeros">{{ c.base }}</td>
+          <td class="numeros">{{ c.fallas }}</td>
+          <td class="numeros"><b>{{ c.tasa|default_if_none:"—" }}</b></td>
+          <td class="numeros{% if c.pct_prematuras >= 30 %} texto-critico{% endif %}">{% if c.fallas %}{{ c.pct_prematuras }} %{% else %}—{% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="lista-vacia">Sin datos.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

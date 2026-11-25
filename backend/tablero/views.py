@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import Http404, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -19,10 +19,11 @@ from auditoria import resumen as resumen_seguridad
 from auditoria.models import EventoSeguridad
 from auditoria.servicios import registrar, verificar_cadena
 from auditoria.utils import ip_de
-from telemetria.models import Alerta, Cliente, Gateway, Medicion, Nodo, Senal, Severidad, Vehiculo
+from telemetria.models import Alerta, Cliente, Gateway, Medicion, Nodo, Region, Senal, Severidad, Vehiculo
 
 from .api import alertas_del_autobus, nodo_seleccionado
 from .permisos import PermisoAuditadoMixin
+from .acceso import AccesoPorUnidadMixin, exigir_unidad, solo_asignadas
 
 Tipo = EventoSeguridad.Tipo
 Sev = EventoSeguridad.Severidad
@@ -40,15 +41,17 @@ def _fecha(texto):
         return None
 
 
-class MonitoreoView(VistaProtegida, TemplateView):
-    """Monitoreo en vivo de UN autobús: /autobuses/<id>/monitoreo/?nodo=<id del nodo>."""
+class MonitoreoView(AccesoPorUnidadMixin, VistaProtegida, TemplateView):
+    """Pestaña «En vivo» de la ficha de UNA unidad: /autobuses/<id>/monitoreo/?nodo=<id del nodo>."""
 
-    permission_required = "telemetria.ver_tablero"
     template_name = "tablero/monitoreo.html"
 
     def get_context_data(self, **kwargs):
+        from .autobuses import pestanas_de
+
         contexto = super().get_context_data(**kwargs)
         vehiculo = get_object_or_404(Vehiculo.objects.select_related("cliente"), pk=self.kwargs["pk"])
+        exigir_unidad(self.request, vehiculo.pk)
         nodo = nodo_seleccionado(self.request.GET.get("nodo"), vehiculo=vehiculo)
         senales = list(Senal.objects.filter(visible=True).exclude(subsistema=Senal.Subsistema.NODO))
         grupos = []
@@ -58,6 +61,9 @@ class MonitoreoView(VistaProtegida, TemplateView):
                 grupos.append({"codigo": valor, "nombre": etiqueta, "senales": lista})
         contexto.update(
             vehiculo=vehiculo,
+            pestanas=pestanas_de(self.request.user), pestana="en_vivo",
+            # Wi-Fi, bus CAN y pérdida de tramas: solo para Ingeniería.
+            indicadores_tecnicos=self.request.user.has_perm("telemetria.gestionar_dispositivos"),
             nodo=nodo,
             nodos=Nodo.objects.filter(gateway__vehiculo=vehiculo).order_by("gateway_id", "numero"),
             grupos=grupos,
@@ -70,8 +76,7 @@ class MonitoreoView(VistaProtegida, TemplateView):
         return contexto
 
 
-class SenalView(VistaProtegida, DetailView):
-    permission_required = "telemetria.ver_tablero"
+class SenalView(AccesoPorUnidadMixin, VistaProtegida, DetailView):
     template_name = "tablero/senal.html"
     model = Senal
     slug_field = "codigo"
@@ -82,6 +87,10 @@ class SenalView(VistaProtegida, DetailView):
         contexto = super().get_context_data(**kwargs)
         senal = self.object
         nodo = nodo_seleccionado(self.request.GET.get("nodo"))
+        if solo_asignadas(self.request.user) and nodo is None:
+            raise Http404
+        if nodo:
+            exigir_unidad(self.request, nodo.gateway.vehiculo_id)
         regresar_a = (reverse("tablero:monitoreo", args=[nodo.gateway.vehiculo_id]) + f"?nodo={nodo.pk}"
                       if nodo else reverse("tablero:autobuses"))
         contexto.update(
@@ -105,20 +114,26 @@ class SenalView(VistaProtegida, DetailView):
 
 
 class AlertasView(VistaProtegida, ListView):
+    """P13: lo que detectó el sistema, con su causa probable. «Tomar» evita que dos ingenieros trabajen lo mismo."""
+
     permission_required = "telemetria.ver_tablero"
     template_name = "tablero/alertas.html"
     context_object_name = "alertas"
     paginate_by = 25
 
-    FILTROS = {"activas": Alerta.ACTIVAS, "resueltas": (Alerta.Estado.RESUELTA,), "todas": None}
+    FILTROS = {"activas": Alerta.ACTIVAS, "mis": Alerta.ACTIVAS, "resueltas": (Alerta.Estado.RESUELTA,), "todas": None}
 
     SEVERIDADES = [("", "Todas"), (Severidad.CRITICA, "Crítica"), (Severidad.ADVERTENCIA, "Advertencia"),
                    (Severidad.INFO, "Informativa")]
+    SUBSISTEMAS = [("", "Todos")] + [(c, n) for c, n in Senal.Subsistema.choices if c != Senal.Subsistema.NODO]
+    TOMADA = [("", "Todas"), ("no", "Sin tomar"), ("si", "Tomadas")]
 
     def _leer_filtros(self):
-        """?cliente=<id>&autobus=<id>&severidad=<valor>&desde=AAAA-MM-DD&hasta=AAAA-MM-DD (lo inválido se ignora)."""
+        """?cliente|operador=<id>&autobus=<id>&region=&subsistema=&senal=<codigo>&severidad=&tomada=no|si
+        &desde=AAAA-MM-DD&hasta=AAAA-MM-DD (lo inválido se ignora)."""
         p = self.request.GET
-        cliente_id, autobus_id = p.get("cliente", ""), p.get("autobus", "")
+        cliente_id = p.get("cliente", "") or p.get("operador", "")
+        autobus_id = p.get("autobus", "")
         cliente = Cliente.objects.filter(pk=cliente_id).first() if cliente_id.isdigit() else None
         autobus = Vehiculo.objects.select_related("cliente").filter(pk=autobus_id).first() if autobus_id.isdigit() else None
         if autobus and cliente and autobus.cliente_id != cliente.pk:
@@ -127,37 +142,66 @@ class AlertasView(VistaProtegida, ListView):
         desde, hasta = _fecha(p.get("desde")), _fecha(p.get("hasta"))
         if desde and hasta and desde > hasta:
             desde, hasta = hasta, desde
+        region, subsistema, tomada = p.get("region", ""), p.get("subsistema", ""), p.get("tomada", "")
+        senal = Senal.objects.filter(codigo=p.get("senal", "")).first() if p.get("senal") else None
         return {"cliente": cliente, "autobus": autobus, "severidad": severidad if severidad in dict(self.SEVERIDADES) else "",
-                "desde": desde, "hasta": hasta}
+                "desde": desde, "hasta": hasta, "region": region if region in Region.values else "",
+                "subsistema": subsistema if subsistema in dict(self.SUBSISTEMAS) else "",
+                "tomada": tomada if tomada in dict(self.TOMADA) else "", "senal": senal}
+
+    def _filtrar(self, consulta, f):
+        # La unidad de una alerta es la de su gateway o la del gateway de su nodo.
+        if f["autobus"]:
+            consulta = consulta.filter(Q(gateway__vehiculo=f["autobus"]) | Q(nodo__gateway__vehiculo=f["autobus"]))
+        elif f["cliente"]:
+            consulta = consulta.filter(Q(gateway__vehiculo__cliente=f["cliente"]) | Q(nodo__gateway__vehiculo__cliente=f["cliente"]))
+        if f["region"]:
+            consulta = consulta.filter(Q(gateway__vehiculo__region=f["region"]) | Q(nodo__gateway__vehiculo__region=f["region"]))
+        if f["subsistema"]:
+            consulta = consulta.filter(senal__subsistema=f["subsistema"])
+        if f["senal"]:
+            consulta = consulta.filter(senal=f["senal"])
+        if f["severidad"]:
+            consulta = consulta.filter(severidad=f["severidad"])
+        if f["tomada"]:
+            consulta = consulta.filter(tomada_por__isnull=f["tomada"] == "no")
+        zona = timezone.get_current_timezone()
+        if f["desde"]:
+            consulta = consulta.filter(creada__gte=timezone.make_aware(datetime.combine(f["desde"], time.min), zona))
+        if f["hasta"]:
+            consulta = consulta.filter(creada__lt=timezone.make_aware(datetime.combine(f["hasta"] + timedelta(days=1), time.min), zona))
+        return consulta
 
     def get_queryset(self):
         self.filtro = self.request.GET.get("estado", "activas")
         if self.filtro not in self.FILTROS:
             self.filtro = "activas"
         f = self.f = self._leer_filtros()
-        consulta = Alerta.objects.select_related("senal", "nodo__gateway__vehiculo", "gateway__vehiculo", "atendida_por")
-        # La unidad de una alerta es la de su gateway o la del gateway de su nodo.
-        if f["autobus"]:
-            consulta = consulta.filter(Q(gateway__vehiculo=f["autobus"]) | Q(nodo__gateway__vehiculo=f["autobus"]))
-        elif f["cliente"]:
-            consulta = consulta.filter(Q(gateway__vehiculo__cliente=f["cliente"]) | Q(nodo__gateway__vehiculo__cliente=f["cliente"]))
-        if f["severidad"]:
-            consulta = consulta.filter(severidad=f["severidad"])
-        zona = timezone.get_current_timezone()
-        if f["desde"]:
-            consulta = consulta.filter(creada__gte=timezone.make_aware(datetime.combine(f["desde"], time.min), zona))
-        if f["hasta"]:
-            consulta = consulta.filter(creada__lt=timezone.make_aware(datetime.combine(f["hasta"] + timedelta(days=1), time.min), zona))
+        consulta = self._filtrar(Alerta.objects.select_related(
+            "senal", "nodo__gateway__vehiculo__cliente", "gateway__vehiculo__cliente", "atendida_por", "tomada_por"), f)
+        self.base = consulta  # sin el filtro de estado, para la agrupación
         estados = self.FILTROS[self.filtro]
         consulta = consulta.filter(estado__in=estados) if estados else consulta
+        if self.filtro == "mis":
+            consulta = consulta.filter(tomada_por=self.request.user)
         return consulta.distinct()
+
+    def _grupos(self):
+        """Alertas activas agrupadas por señal y tipo: «Ventilador del A/C · valor bajo · 3 unidades»."""
+        grupos = (self.base.filter(estado__in=Alerta.ACTIVAS, senal__isnull=False)
+                  .values("senal__codigo", "senal__nombre", "tipo")
+                  .annotate(n=Count("id", distinct=True), unidades=Count("nodo__gateway__vehiculo", distinct=True))
+                  .order_by("-unidades", "-n")[:6])
+        tipos = dict(Alerta.Tipo.choices)
+        return [{**g, "tipo_texto": tipos.get(g["tipo"], "")} for g in grupos if g["n"] > 1 or g["unidades"] > 1]
 
     def get_context_data(self, **kwargs):
         contexto = super().get_context_data(**kwargs)
         f = self.f
         datos = {"cliente": f["cliente"].pk if f["cliente"] else "", "autobus": f["autobus"].pk if f["autobus"] else "",
-                 "severidad": f["severidad"], "desde": f["desde"].isoformat() if f["desde"] else "",
-                 "hasta": f["hasta"].isoformat() if f["hasta"] else ""}
+                 "region": f["region"], "subsistema": f["subsistema"], "senal": f["senal"].codigo if f["senal"] else "",
+                 "severidad": f["severidad"], "tomada": f["tomada"],
+                 "desde": f["desde"].isoformat() if f["desde"] else "", "hasta": f["hasta"].isoformat() if f["hasta"] else ""}
         extra = urlencode({k: v for k, v in datos.items() if v})
         autobuses = Vehiculo.objects.select_related("cliente").order_by("cliente__nombre_comercial", "identificador")
         if f["cliente"]:
@@ -165,12 +209,55 @@ class AlertasView(VistaProtegida, ListView):
         contexto.update(
             filtro=self.filtro, f=f, hay_filtros=bool(extra),
             parametros=f"estado={self.filtro}" + (f"&{extra}" if extra else ""),  # paginación
-            parametro_filtros=f"&{extra}" if extra else "",  # pestañas Activas / Resueltas / Todas
-            filtros=[("activas", "Activas"), ("resueltas", "Resueltas"), ("todas", "Todas")],
+            parametro_filtros=f"&{extra}" if extra else "",  # pestañas
+            filtros=[("activas", "Activas"), ("mis", "Mis pendientes"), ("resueltas", "Resueltas"), ("todas", "Todas")],
             clientes=Cliente.objects.filter(vehiculos__isnull=False).distinct().order_by("nombre_comercial"),
-            autobuses=autobuses, severidades=self.SEVERIDADES,
+            autobuses=autobuses, severidades=self.SEVERIDADES, subsistemas=self.SUBSISTEMAS, regiones=Region.choices,
+            opciones_tomada=self.TOMADA, grupos=self._grupos() if self.filtro in ("activas", "mis") else [],
+            mis_pendientes=Alerta.objects.filter(estado__in=Alerta.ACTIVAS, tomada_por=self.request.user).count(),
         )
         return contexto
+
+
+class TomarAlertaView(VistaProtegida, View):
+    """«Tomar» marca quién trabaja la alerta; «Soltar» la libera. Solo quien la tomó (o Ingeniería) la suelta."""
+
+    permission_required = "telemetria.atender_alerta"
+
+    def post(self, request, pk):
+        alerta = get_object_or_404(Alerta.objects.select_related("tomada_por"), pk=pk)
+        accion = request.POST.get("accion")
+        if not alerta.activa:
+            messages.error(request, "La alerta ya está resuelta.")
+            return volver(request)
+        if accion == "tomar":
+            if alerta.tomada_por_id and alerta.tomada_por_id != request.user.pk:
+                messages.error(request, f"Ya la está trabajando {alerta.tomada_por.get_username()}.")
+                return volver(request)
+            alerta.tomada_por, alerta.tomada_en = request.user, timezone.now()
+            mensaje = "Tomaste la alerta: los demás ven que tú la trabajas."
+        elif accion == "soltar" and alerta.tomada_por_id:
+            if alerta.tomada_por_id != request.user.pk and not request.user.has_perm("servicio.validar_ordenes"):
+                messages.error(request, "Solo quien la tomó puede soltarla.")
+                return volver(request)
+            alerta.tomada_por, alerta.tomada_en = None, None
+            mensaje = "Alerta liberada."
+        else:
+            messages.error(request, "La alerta ya no admite esa acción.")
+            return volver(request)
+        alerta.save(update_fields=["tomada_por", "tomada_en"])
+        registrar(Tipo.ALERTA_ATENDIDA, actor=request.user.get_username(), ip=ip_de(request),
+                  detalle={"alerta": alerta.pk, "accion": accion, "mensaje": alerta.mensaje})
+        messages.success(request, mensaje)
+        return volver(request)
+
+
+def volver(request, por_defecto="tablero:alertas"):
+    """Regresa a la página indicada en ?siguiente si es de este sitio; si no, a la lista de alertas."""
+    destino = request.POST.get("siguiente", "")
+    if url_has_allowed_host_and_scheme(destino, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        return redirect(destino)
+    return redirect(por_defecto)
 
 
 class AtenderAlertaView(VistaProtegida, View):
@@ -188,7 +275,7 @@ class AtenderAlertaView(VistaProtegida, View):
             alerta.resuelta_en = ahora
         else:
             messages.error(request, "La alerta ya no admite esa acción.")
-            return self._volver(request)
+            return volver(request)
         alerta.atendida_por = request.user
         alerta.atendida_en = ahora
         if nota:
@@ -197,13 +284,7 @@ class AtenderAlertaView(VistaProtegida, View):
         registrar(Tipo.ALERTA_ATENDIDA, actor=request.user.get_username(), ip=ip_de(request),
                   detalle={"alerta": alerta.pk, "accion": accion, "mensaje": alerta.mensaje})
         messages.success(request, "Alerta actualizada.")
-        return self._volver(request)
-
-    def _volver(self, request):
-        destino = request.POST.get("siguiente", "")
-        if url_has_allowed_host_and_scheme(destino, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
-            return redirect(destino)
-        return redirect("tablero:alertas")
+        return volver(request)
 
 
 class SeguridadView(VistaProtegida, ListView):
@@ -276,7 +357,7 @@ class CambiarEstadoView(VistaProtegida, View):
         siguiente = request.POST.get("siguiente", "")
         if siguiente and url_has_allowed_host_and_scheme(siguiente, {request.get_host()}, request.is_secure()):
             return redirect(siguiente)  # regresa a la misma página de Autobuses, con sus filtros
-        return redirect("tablero:autobuses")
+        return redirect("tablero:dispositivos")
 
 
 class _Eco:
