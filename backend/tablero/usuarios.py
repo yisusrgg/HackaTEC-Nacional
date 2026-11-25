@@ -32,7 +32,6 @@ Usuario = get_user_model()
 ACCIONES = [
     ("telemetria.ver_tablero", "Ver toda la flota: panorama, unidades, alertas, historial y órdenes"),
     ("servicio.solo_asignadas", "Ver solo sus órdenes asignadas y las unidades de esas órdenes"),
-    ("telemetria.atender_alerta", "Atender y resolver alertas"),
     ("servicio.gestionar_ordenes", "Crear y avanzar órdenes de servicio"),
     ("servicio.validar_ordenes", "Validar, cerrar y cancelar órdenes"),
     ("servicio.ver_analisis", "Ver los indicadores de servicio"),

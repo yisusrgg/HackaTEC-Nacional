@@ -12,8 +12,8 @@
       <h2 class="titulo-pantalla">{{ orden.titulo }} <small class="mono">{{ orden.folio }}</small></h2>
     </div>
     <div class="pantalla-acciones">
-      {% if orden.aprobacion == "PENDIENTE" %}<span class="etiqueta etiqueta-aviso">Por validar por Ingeniería</span>
-      {% elif orden.aprobacion == "APROBADA" %}<span class="etiqueta etiqueta-ok">Aprobada por Ingeniería</span>
+      {% if orden.aprobacion == "PENDIENTE" %}<span class="etiqueta etiqueta-aviso">Por validar</span>
+      {% elif orden.aprobacion == "APROBADA" %}<span class="etiqueta etiqueta-ok">Aprobada</span>
       {% elif orden.aprobacion == "DEVUELTA" %}<span class="etiqueta etiqueta-critico">Devuelta al técnico</span>{% endif %}
       {% include "tablero/_etapa.html" with etapa=orden.etapa %}
     </div>
@@ -40,7 +40,7 @@
 
   {% if orden.aprobacion == "PENDIENTE" and puede_validar %}
     <section class="panel panel-destacado">
-      <div class="panel-encabezado"><h3>Revisión de Ingeniería</h3><span class="secundario texto-chico">lo registró un técnico de convenio; la falla cuenta en los análisis hasta que lo apruebes</span></div>
+      <div class="panel-encabezado"><h3>Revisión del trabajo</h3><span class="secundario texto-chico">lo registró un técnico de convenio; la falla cuenta en los análisis hasta que lo apruebes</span></div>
       <div class="panel-cuerpo dos-campos">
         <form method="post" action="{% url 'tablero:orden_accion' orden.pk %}" class="formulario">
           {% csrf_token %}<input type="hidden" name="accion" value="aprobar">
@@ -55,9 +55,9 @@
       </div>
     </section>
   {% elif orden.aprobacion == "PENDIENTE" %}
-    <div class="mensaje mensaje-aviso">Ingeniería revisará lo que registraste antes de que la falla cuente en los análisis.</div>
+    <div class="mensaje mensaje-aviso">El administrador revisará lo que registraste antes de que la falla cuente en los análisis.</div>
   {% elif orden.aprobacion == "DEVUELTA" and orden.abierta %}
-    <div class="mensaje mensaje-error">Ingeniería devolvió la orden: revisa su comentario en el registro de abajo y vuelve a registrar la reparación.</div>
+    <div class="mensaje mensaje-error">El administrador devolvió la orden: revisa su comentario en el registro de abajo y vuelve a registrar la reparación.</div>
   {% endif %}
 
   {% if diagnostico_sistema %}
@@ -180,7 +180,7 @@
               </div>
               <p class="secundario texto-chico">Si se cambió la pieza, sus ciclos u horas quedan como su vida a la falla y la nueva empieza a contar desde cero.</p>
             {% endif %}
-            <p class="secundario">{% if orden.tiene_criterio %}Al registrarla empieza la validación de {{ orden.get_minutos_validacion_display }}: si {{ orden.senal.nombre|lower }} se mantiene dentro de sus umbrales, la orden se cierra sola.{% else %}Esta orden no tiene señal para validar con datos: después de registrarla, Ingeniería la valida manualmente.{% endif %}</p>
+            <p class="secundario">{% if orden.tiene_criterio %}Al registrarla empieza la validación de {{ orden.get_minutos_validacion_display }}: si {{ orden.senal.nombre|lower }} se mantiene dentro de sus umbrales, la orden se cierra sola.{% else %}Esta orden no tiene señal para validar con datos: después de registrarla, el administrador la valida manualmente.{% endif %}</p>
             <div><button type="submit" class="btn btn-primario">Registrar reparación e iniciar validación</button></div>
           </form>
         {% elif orden.etapa == "VALIDACION" %}

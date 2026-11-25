@@ -2,7 +2,7 @@
 
 Además de reparar, la orden registra por qué falló la pieza (causa del catálogo), qué componente se cambió y con
 cuántos ciclos u horas falló: de ahí salen las fallas que usa Confiabilidad. Lo que registra un técnico de
-convenio queda «Por validar por Ingeniería» hasta que Ingeniería lo aprueba o lo devuelve.
+convenio queda «Por validar» hasta que el Administrador lo aprueba o lo devuelve.
 """
 from datetime import timedelta
 
@@ -96,8 +96,19 @@ class NuevaOrdenView(VistaProtegida, View):
             return Alerta.objects.select_related("nodo__gateway__vehiculo", "gateway__vehiculo", "senal").filter(pk=pk).first()
         return None
 
+    @staticmethod
+    def _ya_tiene_orden(request, alerta):
+        """Una alerta lleva a una sola orden: si ya tiene, no se duplica el trabajo."""
+        orden = alerta.ordenes.first() if alerta else None
+        if orden:
+            messages.error(request, f"Esa alerta ya tiene la orden {orden.folio}.")
+            return True
+        return False
+
     def get(self, request):
         alerta = self._alerta(request)
+        if self._ya_tiene_orden(request, alerta):
+            return redirect("tablero:alertas")
         p = request.GET
         inicial = {"responsable": request.user if request.user.groups.exists() else None}
         vehiculo = Vehiculo.objects.filter(pk=p.get("vehiculo")).first() if p.get("vehiculo", "").isdigit() else None
@@ -127,6 +138,8 @@ class NuevaOrdenView(VistaProtegida, View):
 
     def post(self, request):
         alerta = self._alerta(request)
+        if self._ya_tiene_orden(request, alerta):
+            return redirect("tablero:alertas")
         form = FormularioOrden(request.POST)
         if not form.is_valid():
             return render(request, self.template_name, {"form": form, "alerta": alerta}, status=400)
@@ -138,7 +151,8 @@ class NuevaOrdenView(VistaProtegida, View):
             asignado = f" Asignada a {orden.responsable.get_username()}." if orden.responsable else ""
             orden.anotar("Orden creada" + (f" desde la alerta «{alerta.mensaje}»." if alerta else ".") + asignado,
                          autor=request.user, tipo=TipoAvance.ETAPA)
-            if alerta and alerta.estado == Alerta.Estado.ABIERTA:
+            if alerta and alerta.activa:
+                # «Atendida» = ya tiene orden. Se resuelve sola al cerrar la orden.
                 alerta.estado = Alerta.Estado.ATENDIDA
                 alerta.atendida_por = request.user
                 alerta.atendida_en = timezone.now()
@@ -209,8 +223,8 @@ def _datos_grafica(orden):
 
 
 class OrdenAccionView(VistaProtegida, View):
-    """Acciones sobre una orden. Avanzar y anotar: técnicos e Ingeniería (el técnico de convenio, solo en sus
-    órdenes). Validar, cancelar, aprobar y devolver: solo Ingeniería."""
+    """Acciones sobre una orden. Avanzar y anotar: técnicos y Administrador (el técnico de convenio, solo en sus
+    órdenes). Validar, cancelar, aprobar y devolver: solo el Administrador. Ingeniería solo consulta."""
 
     permission_required = "servicio.gestionar_ordenes"
     SOLO_VALIDADOR = {"validar", "cancelar", "aprobar", "devolver"}
@@ -223,7 +237,7 @@ class OrdenAccionView(VistaProtegida, View):
         accion = request.POST.get("accion", "")
         texto = request.POST.get("texto", "").strip()[:2000]
         if accion in self.SOLO_VALIDADOR and not request.user.has_perm("servicio.validar_ordenes"):
-            negar(request, "acción solo para Ingeniería", accion=accion, permiso=["servicio.validar_ordenes"])
+            negar(request, "acción solo para el Administrador", accion=accion, permiso=["servicio.validar_ordenes"])
         metodo = getattr(self, f"_{accion}", None)
         if metodo is None or (accion not in self.SIEMPRE and not orden.abierta):
             messages.error(request, "La orden ya no admite esa acción.")
@@ -305,13 +319,13 @@ class OrdenAccionView(VistaProtegida, View):
         orden.save(update_fields=["solucion", "causa", "componente", "etapa", "validacion_inicio", "aprobacion",
                                   "actualizada"])
         detalle = (f"Empieza la validación de {orden.get_minutos_validacion_display()}." if orden.tiene_criterio
-                   else "Sin señal para validar con datos: queda en espera de que Ingeniería la valide.")
+                   else "Sin señal para validar con datos: queda en espera de que el Administrador la valide.")
         cambio = ""
         if falla:
             cambio = (f" Se cambió {falla.componente.tipo.nombre.lower()} con {falla.uso_al_fallar:,.0f} "
                       f"{falla.componente.tipo.unidad_texto} ({falla.porcentaje_garantia:.0f} % de la garantía"
                       f"{', falla prematura' if falla.prematura else ''}).")
-        aprobacion = " Queda por validar por Ingeniería." if orden.aprobacion == Aprobacion.PENDIENTE else ""
+        aprobacion = " Queda por validar por el Administrador." if orden.aprobacion == Aprobacion.PENDIENTE else ""
         orden.anotar(f"Reparación terminada: {texto} Causa: {causa}.{cambio} {detalle}{aprobacion}",
                      autor=request.user, tipo=TipoAvance.ETAPA)
         return "Reparación registrada. " + detalle
@@ -349,7 +363,7 @@ class OrdenAccionView(VistaProtegida, View):
             return None
         orden.aprobacion = Aprobacion.APROBADA
         orden.save(update_fields=["aprobacion", "actualizada"])
-        orden.anotar("Ingeniería aprobó lo registrado por el técnico de convenio." + (f" {texto}" if texto else ""),
+        orden.anotar("El Administrador aprobó lo registrado por el técnico de convenio." + (f" {texto}" if texto else ""),
                      autor=request.user, tipo=TipoAvance.ETAPA)
         confirmadas = confiabilidad.confirmar_falla(orden)
         registrar(Tipo.ORDEN_APROBACION, actor=request.user.get_username(), ip=ip_de(request),
@@ -371,7 +385,7 @@ class OrdenAccionView(VistaProtegida, View):
         orden.resultado = OrdenServicio.Resultado.PENDIENTE
         orden.cerrada_en = None
         orden.save(update_fields=["aprobacion", "etapa", "validacion_inicio", "resultado", "cerrada_en", "actualizada"])
-        orden.anotar(f"Ingeniería devolvió la orden al técnico: {texto}", autor=request.user, tipo=TipoAvance.ETAPA)
+        orden.anotar(f"El Administrador devolvió la orden al técnico: {texto}", autor=request.user, tipo=TipoAvance.ETAPA)
         registrar(Tipo.ORDEN_APROBACION, severidad=Sev.ADVERTENCIA, actor=request.user.get_username(), ip=ip_de(request),
                   detalle={"orden": orden.folio, "accion": "devolver", "motivo": texto})
         return "Orden devuelta al técnico."

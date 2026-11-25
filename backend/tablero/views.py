@@ -62,8 +62,9 @@ class MonitoreoView(AccesoPorUnidadMixin, VistaProtegida, TemplateView):
         contexto.update(
             vehiculo=vehiculo,
             pestanas=pestanas_de(self.request.user), pestana="en_vivo",
-            # Wi-Fi, bus CAN y pérdida de tramas: solo para Ingeniería.
-            indicadores_tecnicos=self.request.user.has_perm("telemetria.gestionar_dispositivos"),
+            # Wi-Fi, bus CAN y pérdida de tramas: para Ingeniería (los consulta) y el Administrador (gestiona equipos).
+            indicadores_tecnicos=(self.request.user.has_perm("confiabilidad.ver_confiabilidad")
+                                  or self.request.user.has_perm("telemetria.gestionar_dispositivos")),
             nodo=nodo,
             nodos=Nodo.objects.filter(gateway__vehiculo=vehiculo).order_by("gateway_id", "numero"),
             grupos=grupos,
@@ -114,22 +115,25 @@ class SenalView(AccesoPorUnidadMixin, VistaProtegida, DetailView):
 
 
 class AlertasView(VistaProtegida, ListView):
-    """P13: lo que detectó el sistema, con su causa probable. «Tomar» evita que dos ingenieros trabajen lo mismo."""
+    """P13: registro de lo que detectó el sistema, con su causa probable.
+
+    Las alertas no son avisos que alguien tenga que cerrar: se abren y se resuelven solas según la señal y quedan
+    para consultarlas al revisar una unidad. Si hace falta reparar, el técnico crea una orden desde la alerta.
+    """
 
     permission_required = "telemetria.ver_tablero"
     template_name = "tablero/alertas.html"
     context_object_name = "alertas"
     paginate_by = 25
 
-    FILTROS = {"activas": Alerta.ACTIVAS, "mis": Alerta.ACTIVAS, "resueltas": (Alerta.Estado.RESUELTA,), "todas": None}
+    FILTROS = {"activas": Alerta.ACTIVAS, "resueltas": (Alerta.Estado.RESUELTA,), "todas": None}
 
     SEVERIDADES = [("", "Todas"), (Severidad.CRITICA, "Crítica"), (Severidad.ADVERTENCIA, "Advertencia"),
                    (Severidad.INFO, "Informativa")]
     SUBSISTEMAS = [("", "Todos")] + [(c, n) for c, n in Senal.Subsistema.choices if c != Senal.Subsistema.NODO]
-    TOMADA = [("", "Todas"), ("no", "Sin tomar"), ("si", "Tomadas")]
 
     def _leer_filtros(self):
-        """?cliente|operador=<id>&autobus=<id>&region=&subsistema=&senal=<codigo>&severidad=&tomada=no|si
+        """?cliente|operador=<id>&autobus=<id>&region=&subsistema=&senal=<codigo>&severidad=
         &desde=AAAA-MM-DD&hasta=AAAA-MM-DD (lo inválido se ignora)."""
         p = self.request.GET
         cliente_id = p.get("cliente", "") or p.get("operador", "")
@@ -142,12 +146,11 @@ class AlertasView(VistaProtegida, ListView):
         desde, hasta = _fecha(p.get("desde")), _fecha(p.get("hasta"))
         if desde and hasta and desde > hasta:
             desde, hasta = hasta, desde
-        region, subsistema, tomada = p.get("region", ""), p.get("subsistema", ""), p.get("tomada", "")
+        region, subsistema = p.get("region", ""), p.get("subsistema", "")
         senal = Senal.objects.filter(codigo=p.get("senal", "")).first() if p.get("senal") else None
         return {"cliente": cliente, "autobus": autobus, "severidad": severidad if severidad in dict(self.SEVERIDADES) else "",
                 "desde": desde, "hasta": hasta, "region": region if region in Region.values else "",
-                "subsistema": subsistema if subsistema in dict(self.SUBSISTEMAS) else "",
-                "tomada": tomada if tomada in dict(self.TOMADA) else "", "senal": senal}
+                "subsistema": subsistema if subsistema in dict(self.SUBSISTEMAS) else "", "senal": senal}
 
     def _filtrar(self, consulta, f):
         # La unidad de una alerta es la de su gateway o la del gateway de su nodo.
@@ -163,8 +166,6 @@ class AlertasView(VistaProtegida, ListView):
             consulta = consulta.filter(senal=f["senal"])
         if f["severidad"]:
             consulta = consulta.filter(severidad=f["severidad"])
-        if f["tomada"]:
-            consulta = consulta.filter(tomada_por__isnull=f["tomada"] == "no")
         zona = timezone.get_current_timezone()
         if f["desde"]:
             consulta = consulta.filter(creada__gte=timezone.make_aware(datetime.combine(f["desde"], time.min), zona))
@@ -178,12 +179,10 @@ class AlertasView(VistaProtegida, ListView):
             self.filtro = "activas"
         f = self.f = self._leer_filtros()
         consulta = self._filtrar(Alerta.objects.select_related(
-            "senal", "nodo__gateway__vehiculo__cliente", "gateway__vehiculo__cliente", "atendida_por", "tomada_por"), f)
+            "senal", "nodo__gateway__vehiculo__cliente", "gateway__vehiculo__cliente", "atendida_por"), f)
         self.base = consulta  # sin el filtro de estado, para la agrupación
         estados = self.FILTROS[self.filtro]
         consulta = consulta.filter(estado__in=estados) if estados else consulta
-        if self.filtro == "mis":
-            consulta = consulta.filter(tomada_por=self.request.user)
         return consulta.distinct()
 
     def _grupos(self):
@@ -200,7 +199,7 @@ class AlertasView(VistaProtegida, ListView):
         f = self.f
         datos = {"cliente": f["cliente"].pk if f["cliente"] else "", "autobus": f["autobus"].pk if f["autobus"] else "",
                  "region": f["region"], "subsistema": f["subsistema"], "senal": f["senal"].codigo if f["senal"] else "",
-                 "severidad": f["severidad"], "tomada": f["tomada"],
+                 "severidad": f["severidad"],
                  "desde": f["desde"].isoformat() if f["desde"] else "", "hasta": f["hasta"].isoformat() if f["hasta"] else ""}
         extra = urlencode({k: v for k, v in datos.items() if v})
         autobuses = Vehiculo.objects.select_related("cliente").order_by("cliente__nombre_comercial", "identificador")
@@ -210,46 +209,12 @@ class AlertasView(VistaProtegida, ListView):
             filtro=self.filtro, f=f, hay_filtros=bool(extra),
             parametros=f"estado={self.filtro}" + (f"&{extra}" if extra else ""),  # paginación
             parametro_filtros=f"&{extra}" if extra else "",  # pestañas
-            filtros=[("activas", "Activas"), ("mis", "Mis pendientes"), ("resueltas", "Resueltas"), ("todas", "Todas")],
+            filtros=[("activas", "Activas"), ("resueltas", "Resueltas"), ("todas", "Todas")],
             clientes=Cliente.objects.filter(vehiculos__isnull=False).distinct().order_by("nombre_comercial"),
             autobuses=autobuses, severidades=self.SEVERIDADES, subsistemas=self.SUBSISTEMAS, regiones=Region.choices,
-            opciones_tomada=self.TOMADA, repetidas=self._grupos() if self.filtro in ("activas", "mis") else [],
-            mis_pendientes=Alerta.objects.filter(estado__in=Alerta.ACTIVAS, tomada_por=self.request.user).count(),
+            repetidas=self._grupos() if self.filtro == "activas" else [],
         )
         return contexto
-
-
-class TomarAlertaView(VistaProtegida, View):
-    """«Tomar» marca quién trabaja la alerta; «Soltar» la libera. Solo quien la tomó (o Ingeniería) la suelta."""
-
-    permission_required = "telemetria.atender_alerta"
-
-    def post(self, request, pk):
-        alerta = get_object_or_404(Alerta.objects.select_related("tomada_por"), pk=pk)
-        accion = request.POST.get("accion")
-        if not alerta.activa:
-            messages.error(request, "La alerta ya está resuelta.")
-            return volver(request)
-        if accion == "tomar":
-            if alerta.tomada_por_id and alerta.tomada_por_id != request.user.pk:
-                messages.error(request, f"Ya la está trabajando {alerta.tomada_por.get_username()}.")
-                return volver(request)
-            alerta.tomada_por, alerta.tomada_en = request.user, timezone.now()
-            mensaje = "Tomaste la alerta: los demás ven que tú la trabajas."
-        elif accion == "soltar" and alerta.tomada_por_id:
-            if alerta.tomada_por_id != request.user.pk and not request.user.has_perm("servicio.validar_ordenes"):
-                messages.error(request, "Solo quien la tomó puede soltarla.")
-                return volver(request)
-            alerta.tomada_por, alerta.tomada_en = None, None
-            mensaje = "Alerta liberada."
-        else:
-            messages.error(request, "La alerta ya no admite esa acción.")
-            return volver(request)
-        alerta.save(update_fields=["tomada_por", "tomada_en"])
-        registrar(Tipo.ALERTA_ATENDIDA, actor=request.user.get_username(), ip=ip_de(request),
-                  detalle={"alerta": alerta.pk, "accion": accion, "mensaje": alerta.mensaje})
-        messages.success(request, mensaje)
-        return volver(request)
 
 
 def volver(request, por_defecto="tablero:alertas"):
@@ -259,32 +224,6 @@ def volver(request, por_defecto="tablero:alertas"):
         return redirect(destino)
     return redirect(por_defecto)
 
-
-class AtenderAlertaView(VistaProtegida, View):
-    permission_required = "telemetria.atender_alerta"
-
-    def post(self, request, pk):
-        alerta = get_object_or_404(Alerta, pk=pk)
-        accion = request.POST.get("accion")
-        nota = request.POST.get("nota", "").strip()[:255]
-        ahora = timezone.now()
-        if accion == "atender" and alerta.estado == Alerta.Estado.ABIERTA:
-            alerta.estado = Alerta.Estado.ATENDIDA
-        elif accion == "resolver" and alerta.activa:
-            alerta.estado = Alerta.Estado.RESUELTA
-            alerta.resuelta_en = ahora
-        else:
-            messages.error(request, "La alerta ya no admite esa acción.")
-            return volver(request)
-        alerta.atendida_por = request.user
-        alerta.atendida_en = ahora
-        if nota:
-            alerta.nota = nota
-        alerta.save()
-        registrar(Tipo.ALERTA_ATENDIDA, actor=request.user.get_username(), ip=ip_de(request),
-                  detalle={"alerta": alerta.pk, "accion": accion, "mensaje": alerta.mensaje})
-        messages.success(request, "Alerta actualizada.")
-        return volver(request)
 
 
 class SeguridadView(VistaProtegida, ListView):

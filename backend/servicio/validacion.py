@@ -49,7 +49,7 @@ def lecturas_malas(orden):
 def evaluar(orden, ahora=None):
     ahora = ahora or timezone.now()
     if not orden.tiene_criterio:
-        return Validacion("sin_criterio", "Sin señal para validar con datos: Ingeniería la valida manualmente.")
+        return Validacion("sin_criterio", "Sin señal para validar con datos: el Administrador la valida manualmente.")
     if orden.etapa in (Etapa.DIAGNOSTICO, Etapa.REPARACION) or orden.validacion_inicio is None:
         return Validacion("pendiente", "La validación empieza cuando se registra la reparación.")
 

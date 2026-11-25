@@ -167,7 +167,8 @@ def pestanas_de(usuario):
     permitidas = {"resumen", "componentes", "en_vivo"}
     if usuario.has_perm("telemetria.ver_tablero"):
         permitidas.add("fallas")
-    if usuario.has_perm("telemetria.gestionar_dispositivos"):
+    # Ingeniería los consulta; solo el Administrador (gestionar_dispositivos) ve los botones de clave y revocar.
+    if usuario.has_perm("telemetria.gestionar_dispositivos") or usuario.has_perm("confiabilidad.ver_confiabilidad"):
         permitidas.add("dispositivos")
     return dict((c, n) for c, n in todas if c in permitidas)
 

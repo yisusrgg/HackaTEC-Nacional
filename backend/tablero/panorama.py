@@ -61,7 +61,7 @@ def calcular(f, ahora=None):
                 .exclude(senal__subsistema=Senal.Subsistema.NODO)
                 .aggregate(total=Count("id"), validas=Count("id", filter=Q(calidad=Medicion.Calidad.OK))))
     activas = alertas_de(ids).filter(estado__in=Alerta.ACTIVAS).distinct()
-    criticas_sin_tomar = activas.filter(severidad=Severidad.CRITICA, tomada_por__isnull=True)
+    criticas_sin_orden = activas.filter(severidad=Severidad.CRITICA, estado=Alerta.Estado.ABIERTA)  # «Atendida» = ya tiene orden
     componentes = ComponenteInstalado.objects.activos().filter(vehiculo__in=ids).con_vida()
     fallas = Falla.objects.filter(confirmada=True, componente__vehiculo__in=ids)
     ordenes = OrdenServicio.objects.filter(vehiculo__in=ids)
@@ -72,14 +72,14 @@ def calcular(f, ahora=None):
             "reportando": reportando,
             "lecturas": lecturas["total"],
             "validas": round(100 * lecturas["validas"] / lecturas["total"], 1) if lecturas["total"] else None,
-            "criticas_sin_tomar": criticas_sin_tomar.count(),
+            "criticas_sin_orden": criticas_sin_orden.count(),
             "activas": activas.count(),
             "cerca": componentes.filter(vida_pct__gte=PORCENTAJE_CERCA_DEL_LIMITE).count(),
             "prematuras_mes": fallas.filter(momento=Falla.Momento.TEMPRANA, fecha__gte=ahora - timedelta(days=30)).count(),
             "en_validacion": ordenes.filter(etapa=OrdenServicio.Etapa.VALIDACION).count(),
             "por_aprobar": ordenes.filter(aprobacion=OrdenServicio.Aprobacion.PENDIENTE).count(),
         },
-        "atencion": list(criticas_sin_tomar.select_related("senal", "nodo__gateway__vehiculo__cliente",
+        "atencion": list(criticas_sin_orden.select_related("senal", "nodo__gateway__vehiculo__cliente",
                                                             "gateway__vehiculo__cliente").order_by("creada")[:10]),
         "cerca_del_limite": list(componentes.select_related("tipo", "vehiculo__cliente")
                                  .filter(vida_pct__gte=50).order_by("-vida_pct")[:10]),

@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 
 from confiabilidad.models import ComponenteInstalado
-from tablero.roles import INGENIERIA, TECNICO, TECNICO_CONVENIO
+from tablero.roles import TECNICO, TECNICO_CONVENIO
 from telemetria.models import Nodo, Senal
 
 from .models import OrdenServicio
@@ -24,7 +24,7 @@ class FormularioOrden(forms.ModelForm):
         }
         help_texts = {
             "componente": "De los instalados en la unidad. Si se cambia, sus ciclos u horas quedan como vida a la falla.",
-            "responsable": "Técnico Volvo, Ingeniería o técnico de un taller con convenio (lo que registre lo valida Ingeniería).",
+            "responsable": "Técnico Volvo o técnico de un taller con convenio (lo que registre el de convenio lo valida el Administrador).",
             "senal": "Después de la reparación, la orden se valida sola si esta señal se mantiene dentro de sus umbrales.",
             "minutos_validacion": "Tiempo que la señal debe mantenerse sin fallas para cerrar la orden.",
         }
@@ -37,7 +37,7 @@ class FormularioOrden(forms.ModelForm):
         super().__init__(*args, **kwargs)
         Usuario = get_user_model()
         self.fields["responsable"].queryset = (
-            Usuario.objects.filter(is_active=True, groups__name__in=[TECNICO, INGENIERIA, TECNICO_CONVENIO])
+            Usuario.objects.filter(is_active=True, groups__name__in=[TECNICO, TECNICO_CONVENIO])
             .distinct().order_by("username").prefetch_related("groups")
         )
 

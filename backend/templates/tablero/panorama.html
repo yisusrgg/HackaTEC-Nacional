@@ -25,9 +25,9 @@
       <p class="cifra">{{ i.reportando }} <small>de {{ i.total }}</small></p>
       <p class="indicador-detalle">{% if i.validas is not None %}{{ i.validas }} % de lecturas válidas{% else %}sin lecturas en 24 h{% endif %}</p>
     </a>
-    <a class="indicador indicador-enlace" href="{% url 'tablero:alertas' %}?severidad=CRITICA&amp;tomada=no{% if q %}&amp;{{ q }}{% endif %}">
-      <p class="rotulo">Alertas críticas sin tomar</p>
-      <p class="cifra{% if i.criticas_sin_tomar %} cifra-critico{% endif %}">{{ i.criticas_sin_tomar }}</p>
+    <a class="indicador indicador-enlace" href="{% url 'tablero:alertas' %}?severidad=CRITICA{% if q %}&amp;{{ q }}{% endif %}">
+      <p class="rotulo">Alertas críticas sin orden</p>
+      <p class="cifra{% if i.criticas_sin_orden %} cifra-critico{% endif %}">{{ i.criticas_sin_orden }}</p>
       <p class="indicador-detalle">{{ i.activas }} alerta{{ i.activas|pluralize }} activa{{ i.activas|pluralize }} en total</p>
     </a>
     <a class="indicador indicador-enlace" href="{% url 'tablero:autobuses' %}?componente=cerca{% if q %}&amp;{{ q }}{% endif %}">
@@ -46,7 +46,7 @@
       <p class="indicador-detalle">se cierran solas si los datos confirman la reparación</p>
     </a>
     <a class="indicador indicador-enlace" href="{% url 'tablero:ordenes' %}?estado=por_validar">
-      <p class="rotulo">Por validar por Ingeniería</p>
+      <p class="rotulo">Por validar</p>
       <p class="cifra{% if i.por_aprobar %} cifra-aviso{% endif %}">{{ i.por_aprobar }}</p>
       <p class="indicador-detalle">trabajos de técnicos de convenio</p>
     </a>
@@ -57,7 +57,7 @@
     <section class="panel">
       <div class="panel-encabezado">
         <h3>Atención ahora</h3>
-        <a href="{% url 'tablero:alertas' %}?severidad=CRITICA&amp;tomada=no{% if q %}&amp;{{ q }}{% endif %}" class="enlace-discreto">Ver alertas</a>
+        <a href="{% url 'tablero:alertas' %}?severidad=CRITICA{% if q %}&amp;{{ q }}{% endif %}" class="enlace-discreto">Ver alertas</a>
       </div>
       {% if datos.atencion %}
         <ul class="pendientes">
@@ -74,7 +74,7 @@
           {% endfor %}
         </ul>
       {% else %}
-        <p class="lista-vacia">No hay alertas críticas sin tomar. Abajo, los componentes más cerca de su límite.</p>
+        <p class="lista-vacia">No hay alertas críticas sin orden de servicio. Abajo, los componentes más cerca de su límite.</p>
       {% endif %}
     </section>
 

@@ -30,7 +30,7 @@
     {% for o in ordenes %}
       <a class="orden-fila" href="{% url 'tablero:orden' o.pk %}">
         <div class="orden-principal">
-          <p class="orden-folio"><span class="mono">{{ o.folio }}</span> {% include "tablero/_etapa.html" with etapa=o.etapa %}{% if o.aprobacion == "PENDIENTE" %} <span class="etiqueta etiqueta-aviso">Por validar por Ingeniería</span>{% elif o.aprobacion == "DEVUELTA" %} <span class="etiqueta etiqueta-critico">Devuelta</span>{% endif %}</p>
+          <p class="orden-folio"><span class="mono">{{ o.folio }}</span> {% include "tablero/_etapa.html" with etapa=o.etapa %}{% if o.aprobacion == "PENDIENTE" %} <span class="etiqueta etiqueta-aviso">Por validar</span>{% elif o.aprobacion == "DEVUELTA" %} <span class="etiqueta etiqueta-critico">Devuelta</span>{% endif %}</p>
           <p class="alerta-titulo">{{ o.titulo }}</p>
           <p class="alerta-meta"><span class="mono">{{ o.vehiculo.identificador }}</span> · {{ o.vehiculo.cliente.nombre_comercial }}{% if o.componente %} · {{ o.componente.tipo.nombre }}{% endif %} · {% if o.responsable %}{{ o.responsable.get_full_name|default:o.responsable.get_username }}{% else %}sin responsable{% endif %} · abierta {{ o.creada|naturaltime }}</p>
           {% if o.intentos %}<p class="orden-aviso">La falla volvió {{ o.intentos }} {% if o.intentos == 1 %}vez{% else %}veces{% endif %} durante la validación</p>{% endif %}

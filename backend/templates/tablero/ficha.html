@@ -34,7 +34,7 @@
               <div>
                 <p class="alerta-mensaje">{{ a.mensaje }}</p>
                 {% if a.diagnostico %}<p class="alerta-meta">{% include "tablero/_certeza.html" with certeza=a.certeza %} {{ a.diagnostico }}</p>{% endif %}
-                <p class="alerta-meta">{{ a.ultima_vez|naturaltime }}{% if a.tomada_por %} · la trabaja {{ a.tomada_por.get_username }}{% endif %}</p>
+                <p class="alerta-meta">{{ a.ultima_vez|naturaltime }}{% if a.estado == "ATENDIDA" %} · con orden{% endif %}</p>
               </div>
             </div>
           {% empty %}

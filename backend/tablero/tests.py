@@ -82,7 +82,7 @@ class TableroTests(TestCase):
         self.assertContains(self.client.get(reverse("tablero:seguridad")), "Bitácora íntegra")
 
     def test_rotar_clave_de_nodo(self):
-        self.entrar("ingeniero")
+        self.entrar("admin")
         respuesta = self.client.post(reverse("tablero:rotar_clave", args=["nodo", self.nodo.pk]))
         self.assertEqual(respuesta.status_code, 200)
         self.nodo.refresh_from_db()
@@ -94,32 +94,45 @@ class TableroTests(TestCase):
         self.assertNotIn(clave, str(evento.detalle))  # la clave nunca va a la bitácora
 
     def test_rotar_clave_del_gateway_cambia_la_epoca(self):
-        self.entrar("ingeniero")
+        self.entrar("admin")
         self.client.post(reverse("tablero:rotar_clave", args=["gateway", self.gateway.pk]))
         self.gateway.refresh_from_db()
         self.assertEqual(self.gateway.epoca, 2)
         self.assertIsNone(self.gateway.ultimo_lote)
 
-    def test_admin_no_rota_claves(self):
-        self.entrar("admin")
+    def test_ingenieria_no_rota_claves(self):
+        self.entrar("ingeniero")
         respuesta = self.client.post(reverse("tablero:rotar_clave", args=["nodo", self.nodo.pk]))
         self.assertEqual(respuesta.status_code, 403)
 
     def test_revocar_nodo(self):
-        self.entrar("ingeniero")
+        self.entrar("admin")
         self.client.post(reverse("tablero:cambiar_estado", args=["nodo", self.nodo.pk]))
         self.nodo.refresh_from_db()
         self.assertFalse(self.nodo.activo)
         self.assertTrue(EventoSeguridad.objects.filter(tipo=T.DISPOSITIVO_ESTADO).exists())
 
-    def test_tecnico_atiende_alerta(self):
+    def test_la_alerta_es_un_registro_y_el_tecnico_crea_la_orden(self):
+        """Sin «Tomar», «Resolver» ni «Descartar»: el técnico crea la orden; Ingeniería solo consulta."""
         alerta = Alerta.objects.create(clave_dedup="x", tipo=Alerta.Tipo.UMBRAL_ALTO, mensaje="Temperatura alta", nodo=self.nodo)
+        self.entrar("ingeniero")
+        pagina = self.client.get(reverse("tablero:alertas"))
+        self.assertContains(pagina, "Temperatura alta")
+        self.assertNotContains(pagina, "Crear orden de servicio")
+        self.assertNotContains(pagina, "Tomar")
         self.entrar("tecnico")
-        self.client.post(reverse("tablero:atender_alerta", args=[alerta.pk]), {"accion": "atender", "nota": "Revisando"})
+        self.assertContains(self.client.get(reverse("tablero:alertas")), "Crear orden de servicio")
+        self.client.post(reverse("tablero:orden_nueva"), {"alerta": alerta.pk, "vehiculo": self.nodo.gateway.vehiculo_id,
+                                                          "titulo": "Temperatura alta", "minutos_validacion": 60})
         alerta.refresh_from_db()
         self.assertEqual(alerta.estado, Alerta.Estado.ATENDIDA)
         self.assertEqual(alerta.atendida_por, self.usuarios["tecnico"])
-        self.assertTrue(EventoSeguridad.objects.filter(tipo=T.ALERTA_ATENDIDA).exists())
+        # Una alerta lleva a una sola orden.
+        self.assertRedirects(self.client.get(reverse("tablero:orden_nueva"), {"alerta": alerta.pk}), reverse("tablero:alertas"))
+
+    def test_ingenieria_no_crea_ordenes(self):
+        self.entrar("ingeniero")
+        self.assertEqual(self.client.get(reverse("tablero:orden_nueva")).status_code, 403)
 
     def test_api_estado(self):
         self.entrar("ingeniero")
