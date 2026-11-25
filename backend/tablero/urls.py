@@ -21,8 +21,6 @@ urlpatterns = [
     path("senal/<str:codigo>/", views.SenalView.as_view(), name="senal"),
     # Servicio
     path("alertas/", views.AlertasView.as_view(), name="alertas"),
-    path("alertas/<int:pk>/atender/", views.AtenderAlertaView.as_view(), name="atender_alerta"),
-    path("alertas/<int:pk>/tomar/", views.TomarAlertaView.as_view(), name="tomar_alerta"),
     path("ordenes/", ordenes.OrdenesView.as_view(), name="ordenes"),
     path("ordenes/nueva/", ordenes.NuevaOrdenView.as_view(), name="orden_nueva"),
     path("ordenes/<int:pk>/", ordenes.OrdenView.as_view(), name="orden"),

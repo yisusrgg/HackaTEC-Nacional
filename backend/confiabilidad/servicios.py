@@ -59,11 +59,9 @@ def registrar_reparacion(orden, *, usuario, causa, reemplazar=False, serie_nueva
 
 
 def confirmar_falla(orden):
-    """Al cerrar la orden (o al aprobarla Ingeniería), su falla empieza a contar en los análisis."""
+    """Al cerrar la orden, su falla empieza a contar en los análisis."""
     from servicio.models import OrdenServicio
 
     if orden.etapa != OrdenServicio.Etapa.CERRADA:
-        return 0
-    if orden.aprobacion in (OrdenServicio.Aprobacion.PENDIENTE, OrdenServicio.Aprobacion.DEVUELTA):
         return 0
     return orden.fallas.filter(confirmada=False).update(confirmada=True)

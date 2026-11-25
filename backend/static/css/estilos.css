@@ -107,7 +107,15 @@ code { background: var(--bruma); padding: 2px 6px; border-radius: var(--radio); 
 .contenido { flex: 1; padding: 32px; }
 
 /* ---------- 5. Menú ---------- */
-.menu { flex: 1; display: grid; align-content: start; gap: 2px; padding: 8px 10px; }
+/* El menú se desplaza por dentro: con muchas opciones (Ingeniería, Administrador) se llega a todas aunque la
+   pantalla sea baja; el logo y el pie de la barra lateral se quedan fijos. */
+.menu {
+  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  display: grid; align-content: start; gap: 2px; padding: 8px 10px 16px;
+  scrollbar-width: none; /* se desplaza con la rueda o el touchpad, sin barra visible */
+}
+.menu::-webkit-scrollbar { display: none; }
+.marca, .lateral-pie { flex-shrink: 0; }
 .menu-grupo { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gris); padding: 14px 10px 6px; }
 .menu-enlace {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;

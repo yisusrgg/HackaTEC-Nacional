@@ -6,7 +6,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from confiabilidad import demo as demo_confiabilidad
-from tablero.roles import ADMINISTRADOR, INGENIERIA, TECNICO, TECNICO_CONVENIO, crear_roles
+from tablero.roles import ADMINISTRADOR, INGENIERIA, TECNICO, crear_roles
 from telemetria.catalogo import cargar_catalogo
 from telemetria.flota_demo import cargar_flota_demo
 from telemetria.models import Cliente, Gateway, Nodo, Vehiculo
@@ -23,7 +23,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **opciones):
         crear_roles()
-        self.stdout.write(self.style.SUCCESS("✔ Roles: Administrador, Ingeniería, Técnico, Técnico de convenio"))
+        self.stdout.write(self.style.SUCCESS("✔ Roles: Administrador, Ingeniería, Técnico"))
         creadas, actualizadas, retiradas = cargar_catalogo()
         self.stdout.write(self.style.SUCCESS(
             f"✔ Catálogo de señales: {creadas} nuevas, {actualizadas} actualizadas, {retiradas} retiradas"))
@@ -71,7 +71,7 @@ class Command(BaseCommand):
     def _usuarios(self):
         Usuario = get_user_model()
         cuentas = [("admin_demo", ADMINISTRADOR, True), ("ingeniero_demo", INGENIERIA, False),
-                   ("tecnico_demo", TECNICO, False), ("convenio_demo", TECNICO_CONVENIO, False)]
+                   ("tecnico_demo", TECNICO, False)]
         for nombre, rol, staff in cuentas:
             if Usuario.objects.filter(username=nombre).exists():
                 self.stdout.write(f"• {nombre} ya existe (no se cambia su contraseña)")

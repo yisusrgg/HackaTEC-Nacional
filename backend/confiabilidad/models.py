@@ -5,7 +5,7 @@ Confiabilidad de componentes: qué piezas lleva cada unidad, cuánto se han usad
 - ComponenteInstalado: una pieza concreta en una unidad, con sus ciclos y horas acumulados.
 - Causa: lista cerrada de causas de falla, para que todos registren igual.
 - Falla: se crea al registrar la reparación de una orden en la que se cambió la pieza; cuenta en los análisis
-  cuando la orden se cierra (y, si la trabajó un técnico de convenio, cuando Ingeniería la aprueba).
+  cuando la orden se cierra.
 - EstadoConteo: memoria interna del conteo (último estado de cada nodo) para contar transiciones entre lotes.
 """
 from django.conf import settings

@@ -21,7 +21,6 @@ from servicio.models import OrdenServicio
 from telemetria.models import Alerta, Gateway, Nodo, Severidad, Vehiculo
 
 from . import filtros
-from .acceso import AccesoPorUnidadMixin, exigir_unidad, solo_asignadas, unidades_permitidas
 from .api import alertas_del_autobus
 from .flota import _alertas_por_vehiculo, _estado_autobus
 from .views import VistaProtegida
@@ -83,9 +82,10 @@ def parametros_url(f):
     return filtros.a_url(f, alertas=f["alertas"], conexion=f["conexion"], componente=f["componente"], q=f["q"])
 
 
-class AutobusesView(AccesoPorUnidadMixin, VistaProtegida, ListView):
+class AutobusesView(VistaProtegida, ListView):
     """P09 Unidades: encontrar cualquier unidad entre miles (búsqueda y paginación en el servidor)."""
 
+    permission_required = "telemetria.ver_tablero"
     template_name = "tablero/autobuses.html"
     context_object_name = "vehiculos"
     paginate_by = 50
@@ -94,9 +94,6 @@ class AutobusesView(AccesoPorUnidadMixin, VistaProtegida, ListView):
         self.filtros = leer_filtros(self.request.GET)
         consulta = Vehiculo.objects.select_related("cliente").prefetch_related(
             Prefetch("gateways", queryset=Gateway.objects.only("id", "vehiculo_id", "activo", "ultimo_contacto")))
-        permitidas = unidades_permitidas(self.request.user)
-        if permitidas is not None:
-            consulta = consulta.filter(pk__in=permitidas)
         return filtrar(consulta, self.filtros).order_by("cliente__nombre_comercial", "identificador")
 
     def get_context_data(self, **kwargs):
@@ -118,20 +115,19 @@ class AutobusesView(AccesoPorUnidadMixin, VistaProtegida, ListView):
             autobuses=autobuses, parametros=parametros_url(f),
             hay_filtros=bool(parametros_url(f)), limpiar=reverse("tablero:autobuses"),
             filtro_alertas=FILTRO_ALERTAS, filtro_conexion=FILTRO_CONEXION, filtro_componente=FILTRO_COMPONENTE,
-            restringido=solo_asignadas(self.request.user),
         )
         return contexto
 
 
-class FichaView(AccesoPorUnidadMixin, VistaProtegida, TemplateView):
+class FichaView(VistaProtegida, TemplateView):
     """P10 Ficha de la unidad: todo lo de una unidad, en pestañas. «En vivo» es la vista de monitoreo."""
 
+    permission_required = "telemetria.ver_tablero"
     template_name = "tablero/ficha.html"
 
     def get_context_data(self, **kwargs):
         contexto = super().get_context_data(**kwargs)
         vehiculo = get_object_or_404(Vehiculo.objects.select_related("cliente"), pk=self.kwargs["pk"])
-        exigir_unidad(self.request, vehiculo.pk)
         pestanas = pestanas_de(self.request.user)
         pestana = self.request.GET.get("pestana", "resumen")
         if pestana not in pestanas or pestana == "en_vivo":
@@ -164,10 +160,9 @@ def pestanas_de(usuario):
     """Pestañas de la ficha que ve cada rol (en orden)."""
     todas = [("resumen", "Resumen"), ("componentes", "Componentes"), ("en_vivo", "En vivo"),
              ("fallas", "Fallas y órdenes"), ("dispositivos", "Dispositivos")]
-    permitidas = {"resumen", "componentes", "en_vivo"}
-    if usuario.has_perm("telemetria.ver_tablero"):
-        permitidas.add("fallas")
-    if usuario.has_perm("telemetria.gestionar_dispositivos"):
+    permitidas = {"resumen", "componentes", "en_vivo", "fallas"}
+    # Ingeniería los consulta; solo el Administrador (gestionar_dispositivos) ve los botones de clave y revocar.
+    if usuario.has_perm("telemetria.gestionar_dispositivos") or usuario.has_perm("confiabilidad.ver_confiabilidad"):
         permitidas.add("dispositivos")
     return dict((c, n) for c, n in todas if c in permitidas)
 

@@ -114,13 +114,10 @@ class FallasTests(TestCase):
         self.assertIsNone(registrar_reparacion(self.orden, usuario=None, causa=self.causa, reemplazar=False))
         self.assertEqual(self.orden.causa, self.causa)
 
-    def test_la_falla_cuenta_al_cerrar_y_si_requiere_aprobacion_hasta_aprobarla(self):
+    def test_la_falla_cuenta_al_cerrar_la_orden(self):
         registrar_reparacion(self.orden, usuario=None, causa=self.causa, reemplazar=True)
         self.assertEqual(confirmar_falla(self.orden), 0)  # la orden sigue abierta
         self.orden.etapa = OrdenServicio.Etapa.CERRADA
-        self.orden.aprobacion = OrdenServicio.Aprobacion.PENDIENTE
-        self.assertEqual(confirmar_falla(self.orden), 0)
-        self.orden.aprobacion = OrdenServicio.Aprobacion.APROBADA
         self.assertEqual(confirmar_falla(self.orden), 1)
 
     def test_clasificacion_de_la_falla(self):

@@ -7,7 +7,7 @@ from auditoria.models import EventoSeguridad
 from confiabilidad import demo
 from confiabilidad.models import Causa, ComponenteInstalado, Falla, TipoComponente
 from servicio.models import OrdenServicio
-from tablero.roles import ADMINISTRADOR, INGENIERIA, TECNICO, TECNICO_CONVENIO, crear_roles
+from tablero.roles import ADMINISTRADOR, INGENIERIA, ROLES_RETIRADOS, TECNICO, crear_roles
 from tablero.tests_flota import alerta, autobus
 from telemetria.catalogo import cargar_catalogo
 from telemetria.flota_demo import cargar_flota_demo
@@ -53,8 +53,7 @@ class PantallasTests(TestCase):
             reverse("tablero:componente", args=[self.componente.pk]),
             reverse("tablero:catalogo"), reverse("tablero:catalogo_nuevo"), reverse("tablero:catalogo_editar", args=[self.tipo.pk]),
             reverse("tablero:senales"), reverse("tablero:senal_editar", args=[Senal.objects.first().pk]),
-            reverse("tablero:dispositivos"), reverse("tablero:dispositivos") + "?estado=clave_vieja",
-            reverse("tablero:alertas"), reverse("tablero:alertas") + "?estado=mis", reverse("tablero:alertas") + "?region=GOLFO&tomada=no",
+            reverse("tablero:alertas"), reverse("tablero:alertas") + "?region=GOLFO&subsistema=SAN",
             reverse("tablero:ordenes") + "?estado=por_validar", reverse("tablero:resumen"),
         ]
         for url in urls:
@@ -67,6 +66,17 @@ class PantallasTests(TestCase):
         guillotina = next(f for f in filas if f["tipo"].codigo == "guillotina")
         self.assertGreater(guillotina["tempranas"], 0)
         self.assertEqual(filas[0]["tipo"].codigo, "guillotina")  # la de más fallas prematuras va primero
+
+    def test_ingenieria_consulta_pero_no_mueve(self):
+        self.client.force_login(self.ingeniero)
+        for url in (reverse("tablero:dispositivos"), reverse("tablero:orden_nueva")):
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).status_code, 403)
+        ficha = self.client.get(reverse("tablero:ficha", args=[self.vehiculo.pk]) + "?pestana=dispositivos")
+        self.assertContains(ficha, "Gateway")  # ve los dispositivos…
+        self.assertNotContains(ficha, "Revocar acceso")  # …sin los botones
+        self.client.force_login(self.admin)
+        self.assertEqual(self.client.get(reverse("tablero:dispositivos") + "?estado=clave_vieja").status_code, 200)
 
     def test_tecnico_volvo_no_ve_confiabilidad_ni_dispositivos(self):
         self.client.force_login(self.tecnico)
@@ -118,36 +128,9 @@ class PantallasTests(TestCase):
         self.assertEqual(evento.detalle["cambios"]["umbral_alto"], ["30.0", "32.0"])
 
 
-class AlertasTomarTests(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        crear_roles()
-        cargar_catalogo()
-        cls.uno, cls.dos = usuario("ing1", INGENIERIA), usuario("tec1", TECNICO)
-        cliente = Cliente.objects.create(nombre_comercial="Flota")
-        _, _, nodo = autobus(cliente, "A-1", segundos=5)
-        cls.alerta = alerta(nodo, Severidad.CRITICA, "x1")
-
-    def tomar(self, quien, accion):
-        self.client.force_login(quien)
-        self.client.post(reverse("tablero:tomar_alerta", args=[self.alerta.pk]), {"accion": accion})
-        self.alerta.refresh_from_db()
-
-    def test_tomar_evita_trabajo_duplicado(self):
-        self.tomar(self.dos, "tomar")
-        self.assertEqual(self.alerta.tomada_por, self.dos)
-        self.tomar(self.uno, "tomar")  # ya la tiene otro: no se la quita
-        self.assertEqual(self.alerta.tomada_por, self.dos)
-        respuesta = self.client.get(reverse("tablero:alertas") + "?tomada=no")
-        self.assertEqual(list(respuesta.context["alertas"]), [])
-        self.client.force_login(self.dos)
-        self.assertEqual(list(self.client.get(reverse("tablero:alertas") + "?estado=mis").context["alertas"]), [self.alerta])
-        self.tomar(self.dos, "soltar")
-        self.assertIsNone(self.alerta.tomada_por)
-
-
-class TecnicoDeConvenioTests(TestCase):
-    """Solo ve sus órdenes asignadas y las unidades de esas órdenes; lo que registra lo aprueba Ingeniería."""
+class TecnicoTests(TestCase):
+    """Un solo rol de técnico (de Volvo o de convenio): repara; el Administrador valida. Quién hizo qué queda
+    registrado con su usuario."""
 
     @classmethod
     def setUpTestData(cls):
@@ -155,69 +138,49 @@ class TecnicoDeConvenioTests(TestCase):
         cargar_catalogo()
         demo.cargar_catalogo()
         cliente = Cliente.objects.create(nombre_comercial="Flota")
-        cls.suya, _, cls.nodo_suyo = autobus(cliente, "S-1", segundos=5)
-        cls.ajena, _, cls.nodo_ajeno = autobus(cliente, "S-2", segundos=5)
-        cls.tc = usuario("taller", TECNICO_CONVENIO)
-        cls.ingeniero = usuario("ing", INGENIERIA)
-        cls.guillotina = ComponenteInstalado.objects.activos().get(vehiculo=cls.suya, tipo__codigo="guillotina")
+        cls.vehiculo, _, cls.nodo = autobus(cliente, "S-1", segundos=5)
+        cls.tecnico = usuario("taller", TECNICO)
+        cls.admin = usuario("adm", ADMINISTRADOR)
+        cls.guillotina = ComponenteInstalado.objects.activos().get(vehiculo=cls.vehiculo, tipo__codigo="guillotina")
         cls.guillotina.ciclos = 6000
         cls.guillotina.save()
-        cls.orden = OrdenServicio.objects.create(vehiculo=cls.suya, titulo="Fuga", responsable=cls.tc,
+        cls.orden = OrdenServicio.objects.create(vehiculo=cls.vehiculo, titulo="Fuga", responsable=cls.tecnico,
                                                  componente=cls.guillotina, etapa=OrdenServicio.Etapa.REPARACION)
-        cls.orden_ajena = OrdenServicio.objects.create(vehiculo=cls.ajena, titulo="Otra", responsable=cls.ingeniero)
         cls.causa = Causa.objects.get(codigo="SAN-SEL")
 
-    def setUp(self):
-        self.client.force_login(self.tc)
-
-    def test_solo_ve_lo_suyo(self):
+    def test_el_tecnico_ve_la_flota_y_entra_a_sus_pendientes(self):
+        self.client.force_login(self.tecnico)
         self.assertRedirects(self.client.get(reverse("tablero:inicio")), reverse("tablero:ordenes") + "?estado=mis",
                              fetch_redirect_response=False)
-        self.assertEqual(list(self.client.get(reverse("tablero:ordenes") + "?estado=todas").context["ordenes"]), [self.orden])
-        self.assertEqual([a["vehiculo"] for a in self.client.get(reverse("tablero:autobuses")).context["autobuses"]], [self.suya])
-        self.assertEqual(self.client.get(reverse("tablero:ficha", args=[self.suya.pk])).status_code, 200)
-        self.assertEqual(self.client.get(reverse("tablero:monitoreo", args=[self.suya.pk])).status_code, 200)
-        self.assertEqual(self.client.get(reverse("tablero:api_estado"), {"nodo": self.nodo_suyo.pk}).status_code, 200)
-        for url in (reverse("tablero:panorama"), reverse("tablero:alertas"), reverse("tablero:historial"),
-                    reverse("tablero:orden_nueva")):
+        for url in (reverse("tablero:autobuses"), reverse("tablero:alertas"), reverse("tablero:ficha", args=[self.vehiculo.pk]),
+                    reverse("tablero:api_estado") + f"?nodo={self.nodo.pk}"):
             with self.subTest(url=url):
-                self.assertEqual(self.client.get(url).status_code, 403)
+                self.assertEqual(self.client.get(url).status_code, 200)
 
-    def test_unidad_u_orden_ajena_niega_y_registra(self):
-        antes = EventoSeguridad.objects.filter(tipo=T.ACCESO_DENEGADO).count()
-        self.assertEqual(self.client.get(reverse("tablero:ficha", args=[self.ajena.pk])).status_code, 403)
-        self.assertEqual(self.client.get(reverse("tablero:orden", args=[self.orden_ajena.pk])).status_code, 403)
-        self.assertEqual(self.client.get(reverse("tablero:api_estado"), {"nodo": self.nodo_ajeno.pk}).status_code, 403)
-        self.assertEqual(self.client.get(reverse("tablero:senal", args=["ac.temperatura"]), {"nodo": self.nodo_ajeno.pk}).status_code, 403)
-        self.assertGreaterEqual(EventoSeguridad.objects.filter(tipo=T.ACCESO_DENEGADO).count(), antes + 3)
-
-    def test_su_reparacion_queda_por_validar_hasta_que_ingenieria_la_aprueba(self):
+    def test_la_falla_cuenta_cuando_el_administrador_cierra_la_orden(self):
         url = reverse("tablero:orden_accion", args=[self.orden.pk])
+        self.client.force_login(self.tecnico)
         self.client.post(url, {"accion": "a_validacion", "texto": "Se cambió la guillotina", "causa": self.causa.pk,
                                "reemplazo": "1", "serie_nueva": "GV-1"})
-        self.orden.refresh_from_db()
-        self.assertEqual((self.orden.etapa, self.orden.aprobacion), (OrdenServicio.Etapa.VALIDACION, OrdenServicio.Aprobacion.PENDIENTE))
         falla = Falla.objects.get(orden=self.orden)
         self.assertTrue(falla.prematura)  # 6000 de 30 000 = 20 %
-        # No puede aprobarse a sí mismo.
-        self.assertEqual(self.client.post(url, {"accion": "aprobar"}).status_code, 403)
-        # Ingeniería cierra y aprueba: hasta entonces la falla no cuenta.
-        self.client.force_login(self.ingeniero)
+        self.assertEqual(falla.registrada_por, self.tecnico)  # se sabe qué técnico fue por su usuario
+        self.assertEqual(self.orden.avances.filter(autor=self.tecnico).count(), 1)
+        self.assertFalse(falla.confirmada)
+        # El técnico no valida su propio trabajo.
+        self.assertEqual(self.client.post(url, {"accion": "validar", "texto": "Listo"}).status_code, 403)
+        self.client.force_login(self.admin)
         self.client.post(url, {"accion": "validar", "texto": "Revisado en sitio"})
         falla.refresh_from_db()
-        self.assertFalse(falla.confirmada)
-        self.client.post(url, {"accion": "aprobar"})
-        falla.refresh_from_db()
         self.assertTrue(falla.confirmada)
-        self.assertTrue(EventoSeguridad.objects.filter(tipo=T.ORDEN_APROBACION).exists())
 
-    def test_ingenieria_puede_devolver_la_orden(self):
-        url = reverse("tablero:orden_accion", args=[self.orden.pk])
-        self.client.post(url, {"accion": "a_validacion", "texto": "Listo", "causa": self.causa.pk})
-        self.client.force_login(self.ingeniero)
-        self.client.post(url, {"accion": "devolver", "texto": "Falta la serie de la pieza nueva"})
-        self.orden.refresh_from_db()
-        self.assertEqual((self.orden.etapa, self.orden.aprobacion), (OrdenServicio.Etapa.REPARACION, OrdenServicio.Aprobacion.DEVUELTA))
+    def test_los_usuarios_del_rol_anterior_pasan_a_tecnico(self):
+        viejo = Group.objects.create(name=ROLES_RETIRADOS[0])
+        u = get_user_model().objects.create_user("de-convenio", password="x")
+        u.groups.add(viejo)
+        crear_roles()
+        self.assertFalse(Group.objects.filter(name=ROLES_RETIRADOS[0]).exists())
+        self.assertEqual(list(u.groups.values_list("name", flat=True)), [TECNICO])
 
 
 class DiagnosticoEnLaOrdenTests(TestCase):
@@ -226,7 +189,7 @@ class DiagnosticoEnLaOrdenTests(TestCase):
         crear_roles()
         cargar_catalogo()
         demo.cargar_catalogo()
-        cls.ingeniero = usuario("ing", INGENIERIA)
+        cls.ingeniero = usuario("tec", TECNICO)  # quien crea y trabaja la orden
         cliente = Cliente.objects.create(nombre_comercial="Flota")
         cls.vehiculo, _, cls.nodo = autobus(cliente, "O-1", segundos=5)
         from telemetria.alertas import GestorAlertas
