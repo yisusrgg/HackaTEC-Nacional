@@ -9,7 +9,7 @@ class DispositivoAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         if not obj.clave_cifrada:
             obj.generar_clave()
-            messages.info(request, "Clave generada. Para provisionar el dispositivo usa «Rotar clave» en Tablero → Dispositivos.")
+            messages.info(request, "Clave generada. Para provisionar el dispositivo usa «Rotar clave» en Tablero → Autobuses.")
         super().save_model(request, obj, form, change)
 
 

@@ -46,7 +46,7 @@ class TableroTests(TestCase):
 
     def test_monitoreo_con_rol_y_cabeceras_de_seguridad(self):
         self.entrar("tecnico")
-        respuesta = self.client.get(reverse("tablero:monitoreo"))
+        respuesta = self.client.get(reverse("tablero:monitoreo", args=[self.gateway.vehiculo_id]))
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, 'id="config-resumen"')
         self.assertIn("script-src 'self'", respuesta.headers["Content-Security-Policy"])
@@ -54,8 +54,8 @@ class TableroTests(TestCase):
 
     def test_paginas_principales_cargan(self):
         self.entrar("admin")
-        for url in [reverse("tablero:resumen"), reverse("tablero:monitoreo"), reverse("tablero:alertas"),
-                    reverse("tablero:dispositivos"),
+        for url in [reverse("tablero:resumen"), reverse("tablero:monitoreo", args=[self.gateway.vehiculo_id]),
+                    reverse("tablero:alertas"), reverse("tablero:autobuses"),
                     reverse("tablero:seguridad"), reverse("tablero:senal", args=["ac.temperatura"])]:
             with self.subTest(url=url):
                 self.assertEqual(self.client.get(url).status_code, 200)

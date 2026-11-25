@@ -7,7 +7,7 @@
 <div class="pantalla">
   <div class="pantalla-encabezado">
     <div>
-      <a href="{% url 'tablero:monitoreo' %}{% if nodo %}?nodo={{ nodo.numero }}{% endif %}" class="enlace-discreto">← Volver al monitoreo</a>
+      {% if nodo %}<a href="{% url 'tablero:monitoreo' nodo.gateway.vehiculo_id %}?nodo={{ nodo.pk }}" class="enlace-discreto">← Volver al monitoreo de {{ nodo.gateway.vehiculo.identificador }}</a>{% else %}<a href="{% url 'tablero:autobuses' %}" class="enlace-discreto">← Autobuses</a>{% endif %}
       <p class="rotulo espacio-arriba">{{ senal.get_subsistema_display }}{% if nodo %} · {{ nodo }}{% endif %}</p>
       <h2 class="titulo-pantalla">{{ senal.nombre }} <small class="mono">{{ senal.codigo }}</small></h2>
     </div>
@@ -18,7 +18,7 @@
         {% endfor %}
       </div>
       {% if perms.telemetria.exportar_datos and nodo %}
-        <a id="enlace-exportar" class="btn btn-secundario btn-chico" href="{% url 'tablero:exportar' %}?senal={{ senal.codigo }}&amp;nodo={{ nodo.numero }}&amp;minutos=60">Exportar CSV</a>
+        <a id="enlace-exportar" class="btn btn-secundario btn-chico" href="{% url 'tablero:exportar' %}?senal={{ senal.codigo }}&amp;nodo={{ nodo.pk }}&amp;minutos=60">Exportar CSV</a>
       {% endif %}
     </div>
   </div>

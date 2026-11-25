@@ -8,17 +8,61 @@
   <div class="pantalla-encabezado">
     <div>
       <p class="rotulo">Bandeja de alertas</p>
-      <h2 class="titulo-pantalla">{% if filtro == "activas" %}Alertas activas{% elif filtro == "resueltas" %}Alertas resueltas{% else %}Todas las alertas{% endif %}</h2>
+      <h2 class="titulo-pantalla">{% if filtro == "activas" %}Alertas activas{% elif filtro == "resueltas" %}Alertas resueltas{% else %}Todas las alertas{% endif %}{% if f.autobus %} <small>· <span class="mono">{{ f.autobus.identificador }}</span></small>{% endif %}</h2>
     </div>
     <div class="pantalla-acciones">
       <span class="contador">{{ page_obj.paginator.count }} en total</span>
-      <nav class="segmentado" aria-label="Filtrar alertas">
+      <nav class="segmentado" aria-label="Estado de las alertas">
         {% for clave, etiqueta in filtros %}
-          <a href="?estado={{ clave }}"{% if filtro == clave %} class="activo" aria-current="page"{% endif %}>{{ etiqueta }}</a>
+          <a href="?estado={{ clave }}{{ parametro_filtros }}"{% if filtro == clave %} class="activo" aria-current="page"{% endif %}>{{ etiqueta }}</a>
         {% endfor %}
       </nav>
     </div>
   </div>
+
+  <form method="get" class="panel panel-cuerpo filtros" aria-label="Filtros de alertas">
+    <input type="hidden" name="estado" value="{{ filtro }}">
+    <div class="campo-grupo">
+      <label for="filtro-cliente">Cliente</label>
+      <select id="filtro-cliente" name="cliente" class="campo" data-autoenviar>
+        <option value="">Todos</option>
+        {% for c in clientes %}<option value="{{ c.pk }}"{% if f.cliente and c.pk == f.cliente.pk %} selected{% endif %}>{{ c.nombre_comercial }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="campo-grupo">
+      <label for="filtro-autobus">Unidad</label>
+      <select id="filtro-autobus" name="autobus" class="campo" data-autoenviar>
+        <option value="">Todas</option>
+        {% regroup autobuses by cliente as grupos %}
+        {% for g in grupos %}
+          <optgroup label="{{ g.grouper.nombre_comercial }}">
+            {% for v in g.list %}<option value="{{ v.pk }}"{% if f.autobus and v.pk == f.autobus.pk %} selected{% endif %}>{{ v.identificador }}</option>{% endfor %}
+          </optgroup>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="campo-grupo">
+      <label for="filtro-severidad">Severidad</label>
+      <select id="filtro-severidad" name="severidad" class="campo" data-autoenviar>
+        {% for valor, etiqueta in severidades %}<option value="{{ valor }}"{% if valor == f.severidad %} selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="campo-grupo campo-fecha">
+      <label for="filtro-desde">Desde</label>
+      <input id="filtro-desde" type="date" name="desde" class="campo" value="{{ f.desde|date:'Y-m-d' }}" data-autoenviar>
+    </div>
+    <div class="campo-grupo campo-fecha">
+      <label for="filtro-hasta">Hasta</label>
+      <input id="filtro-hasta" type="date" name="hasta" class="campo" value="{{ f.hasta|date:'Y-m-d' }}" data-autoenviar>
+    </div>
+    {% if hay_filtros %}
+      <div class="acciones">
+        <a href="?estado={{ filtro }}" class="btn btn-texto">Quitar filtros</a>
+        {% if f.autobus %}<a href="{% url 'tablero:monitoreo' f.autobus.pk %}" class="btn btn-secundario btn-chico">Monitoreo de {{ f.autobus.identificador }}</a>{% endif %}
+      </div>
+    {% endif %}
+  </form>
+  <p class="contador-resultados">Las fechas filtran por el día en que se abrió la alerta.</p>
 
   <div class="panel">
     {% for a in alertas %}

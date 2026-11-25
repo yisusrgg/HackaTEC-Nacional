@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% load static humanize %}
-{% block titulo %}Resumen{% endblock %}
-{% block encabezado %}Resumen en tiempo real{% endblock %}
+{% block titulo %}Monitoreo {{ vehiculo.identificador }}{% endblock %}
+{% block encabezado %}Monitoreo en tiempo real{% endblock %}
 
 {% block contenido %}
 {% if not nodo %}
   <div class="panel vacio">
-    <h2>Aún no hay nodos registrados</h2>
-    <p>Ejecuta <code>python manage.py inicializar</code> para crear el gateway y el nodo de demostración.</p>
+    <h2>{{ vehiculo.identificador }} aún no tiene nodos de sensores</h2>
+    <p>Registra su gateway y sus nodos para ver sus lecturas en vivo.</p>
   </div>
 {% else %}
 <div class="pantalla">
@@ -15,15 +15,15 @@
 
   <div class="pantalla-encabezado">
     <div>
-      <p class="rotulo">{{ nodo.gateway.vehiculo }}</p>
-      <h2 class="titulo-pantalla">{{ nodo.nombre }} <small>· nodo {{ nodo.numero }}</small></h2>
+      <p class="rotulo">{{ vehiculo.cliente.nombre_comercial }} · {{ vehiculo.nombre }}</p>
+      <h2 class="titulo-pantalla"><span class="mono">{{ vehiculo.identificador }}</span> <small>· {{ nodo.nombre }} · nodo {{ nodo.numero }}</small></h2>
     </div>
     <div class="pantalla-acciones">
       {% if nodos|length > 1 %}
         <form method="get" class="selector">
           <label for="selector-nodo">Nodo</label>
           <select id="selector-nodo" name="nodo" class="campo" data-autoenviar>
-            {% for n in nodos %}<option value="{{ n.numero }}"{% if n.pk == nodo.pk %} selected{% endif %}>{{ n }}</option>{% endfor %}
+            {% for n in nodos %}<option value="{{ n.pk }}"{% if n.pk == nodo.pk %} selected{% endif %}>{{ n }}</option>{% endfor %}
           </select>
         </form>
       {% endif %}
@@ -62,7 +62,7 @@
       </div>
       <div class="lecturas">
         {% for s in grupo.senales %}
-          <a href="{% url 'tablero:senal' s.codigo %}?nodo={{ nodo.numero }}" data-senal="{{ s.codigo }}" class="lectura nivel-sin-datos">
+          <a href="{% url 'tablero:senal' s.codigo %}?nodo={{ nodo.pk }}" data-senal="{{ s.codigo }}" class="lectura nivel-sin-datos">
             <span class="lectura-nombre">{{ s.nombre }}</span>
             <span class="lectura-valor" data-campo="texto">—</span>
             <span class="lectura-estado" data-campo="estado">Esperando datos…</span>
@@ -75,7 +75,7 @@
   <section class="panel">
     <div class="panel-encabezado">
       <h3>Alertas activas</h3>
-      <a href="{% url 'tablero:alertas' %}" class="enlace-discreto">Ver todas</a>
+      <a href="{% url 'tablero:alertas' %}?autobus={{ vehiculo.pk }}" class="enlace-discreto">Ver todas</a>
     </div>
     <div class="lista-alertas">
       {% for a in alertas %}

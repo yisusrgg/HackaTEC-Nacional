@@ -699,3 +699,14 @@ textarea.campo { resize: vertical; }
   .autobus { grid-template-columns: 1fr; }
   .autobus-estado { justify-items: start; }
 }
+
+
+
+/* ---------- 27. Autobuses (lista con dispositivos y filtros) ---------- */
+.autobus-panel { overflow: hidden; border-top: 3px solid var(--linea-fuerte); }
+.autobus-panel h3 small { font-size: 14px; }
+.gateway-encabezado {
+  display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px;
+  border-top: 1px solid var(--linea);
+}
+.contador-resultados { font-size: 13px; color: var(--gris); }

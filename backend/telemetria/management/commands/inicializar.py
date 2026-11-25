@@ -36,7 +36,7 @@ class Command(BaseCommand):
     def _dispositivos(self):
         if Gateway.objects.exists():
             self.stdout.write("• Ya hay dispositivos registrados. Para obtener una clave nueva usa «Rotar clave» "
-                              "en Tablero → Dispositivos.")
+                              "en Tablero → Autobuses.")
             return
         with transaction.atomic():
             cliente, _ = Cliente.objects.get_or_create(

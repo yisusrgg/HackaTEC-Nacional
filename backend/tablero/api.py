@@ -2,7 +2,7 @@
 from datetime import timedelta
 
 from django.conf import settings
-from django.db.models import Avg, Count, Max, Min
+from django.db.models import Avg, Count, Max, Min, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.response import Response
@@ -16,11 +16,22 @@ from .permisos import permiso_drf
 VerTablero = permiso_drf("telemetria.ver_tablero")
 
 
-def nodo_seleccionado(numero):
-    consulta = Nodo.objects.select_related("gateway").order_by("gateway_id", "numero")
-    if numero:
-        return consulta.filter(numero=numero).first()
+def nodo_seleccionado(nodo_id, vehiculo=None):
+    """Nodo por su id (?nodo=<id>, único entre todos los autobuses). Sin id, el primero del autobús indicado."""
+    consulta = Nodo.objects.select_related("gateway__vehiculo").order_by("gateway_id", "numero")
+    if vehiculo is not None:
+        consulta = consulta.filter(gateway__vehiculo=vehiculo)
+    nodo_id = str(nodo_id or "")
+    if nodo_id.isdigit():
+        return consulta.filter(pk=nodo_id).first() or (consulta.first() if vehiculo is not None else None)
     return consulta.first()
+
+
+def alertas_del_autobus(vehiculo):
+    """Alertas activas de un autobús, ya sea por su gateway o por alguno de sus nodos."""
+    return Alerta.objects.filter(estado__in=Alerta.ACTIVAS).filter(
+        Q(gateway__vehiculo=vehiculo) | Q(nodo__gateway__vehiculo=vehiculo)
+    )
 
 
 def _iso(fecha):
@@ -28,16 +39,17 @@ def _iso(fecha):
 
 
 class EstadoView(APIView):
-    """GET /api/v1/tablero/estado/?nodo=1 — último valor de cada señal y salud del sistema."""
+    """GET /api/v1/tablero/estado/?nodo=<id> — último valor de cada señal y salud del autobús de ese nodo."""
 
     permission_classes = [VerTablero]
 
     def get(self, request):
         nodo = nodo_seleccionado(request.query_params.get("nodo"))
         ahora = timezone.now()
+        alertas = alertas_del_autobus(nodo.gateway.vehiculo) if nodo else Alerta.objects.filter(estado__in=Alerta.ACTIVAS)
         respuesta = {
             "servidor": _iso(ahora),
-            "alertas_activas": Alerta.objects.filter(estado__in=Alerta.ACTIVAS).count(),
+            "alertas_activas": alertas.distinct().count(),
             "eventos_criticos_24h": EventoSeguridad.objects.filter(
                 severidad=EventoSeguridad.Severidad.CRITICA, creado__gte=ahora - timedelta(hours=24)
             ).count(),
@@ -93,7 +105,7 @@ def _resumen_senal(senal, nodo, medicion, claves_activas, ahora, limite_desactua
 
 
 class SerieView(APIView):
-    """GET /api/v1/tablero/series/<codigo>/?nodo=1&minutos=60 — puntos para la gráfica de una señal."""
+    """GET /api/v1/tablero/series/<codigo>/?nodo=<id>&minutos=60 — puntos para la gráfica de una señal."""
 
     permission_classes = [VerTablero]
 

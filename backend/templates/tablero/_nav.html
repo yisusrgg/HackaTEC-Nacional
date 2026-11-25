@@ -4,14 +4,11 @@
     <a href="{% url 'tablero:resumen' %}" class="menu-enlace{% if actual == 'resumen' %} activo{% endif %}"{% if actual == 'resumen' %} aria-current="page"{% endif %}>
       Resumen
     </a>
-    <a href="{% url 'tablero:monitoreo' %}" class="menu-enlace{% if actual == 'monitoreo' or actual == 'senal' %} activo{% endif %}"{% if actual == 'monitoreo' or actual == 'senal' %} aria-current="page"{% endif %}>
-      Monitoreo en vivo
-    </a>
     <a href="{% url 'tablero:alertas' %}" class="menu-enlace{% if actual == 'alertas' %} activo{% endif %}"{% if actual == 'alertas' %} aria-current="page"{% endif %}>
       Alertas
     </a>
-    <a href="{% url 'tablero:dispositivos' %}" class="menu-enlace{% if actual == 'dispositivos' %} activo{% endif %}"{% if actual == 'dispositivos' %} aria-current="page"{% endif %}>
-      Dispositivos
+    <a href="{% url 'tablero:autobuses' %}" class="menu-enlace{% if actual == 'autobuses' or actual == 'monitoreo' or actual == 'senal' %} activo{% endif %}"{% if actual == 'autobuses' or actual == 'monitoreo' or actual == 'senal' %} aria-current="page"{% endif %}>
+      Autobuses
     </a>
     <a href="{% url 'tablero:historial' %}" class="menu-enlace{% if actual == 'historial' %} activo{% endif %}"{% if actual == 'historial' %} aria-current="page"{% endif %}>
       Historial de datos

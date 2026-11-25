@@ -9,7 +9,7 @@
     <div>
       <p class="rotulo">Lecturas guardadas</p>
       <h2 class="titulo-pantalla">Historial de datos</h2>
-      <p class="introduccion">Consulta todas las lecturas que llegaron de los sensores por unidad, señal y fechas. Elige una señal y un nodo para ver su gráfica.</p>
+      <p class="introduccion">Consulta todas las lecturas que llegaron de los sensores por cliente, unidad, señal y fechas. Elige una unidad y una señal para ver su gráfica.</p>
     </div>
   </div>
 
@@ -17,35 +17,67 @@
 
   <form method="get" class="panel panel-cuerpo filtros" aria-label="Filtros del historial">
     <div class="campo-grupo">
-      <label for="filtro-nodo">Unidad y nodo</label>
-      <select id="filtro-nodo" name="nodo" class="campo">
+      <label for="filtro-cliente">Cliente</label>
+      <select id="filtro-cliente" name="cliente" class="campo" data-autoenviar>
         <option value="">Todos</option>
-        {% for n in nodos %}<option value="{{ n.pk }}"{% if f.nodo and n.pk == f.nodo.pk %} selected{% endif %}>{{ n.gateway.vehiculo.identificador }} · {{ n }}</option>{% endfor %}
+        {% for c in clientes %}<option value="{{ c.pk }}"{% if f.cliente and c.pk == f.cliente.pk %} selected{% endif %}>{{ c.nombre_comercial }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="campo-grupo">
+      <label for="filtro-autobus">Unidad</label>
+      <select id="filtro-autobus" name="autobus" class="campo" data-autoenviar>
+        <option value="">Todas</option>
+        {% regroup autobuses by cliente as grupos %}
+        {% for g in grupos %}
+          <optgroup label="{{ g.grouper.nombre_comercial }}">
+            {% for v in g.list %}<option value="{{ v.pk }}"{% if f.autobus and v.pk == f.autobus.pk %} selected{% endif %}>{{ v.identificador }}</option>{% endfor %}
+          </optgroup>
+        {% endfor %}
+      </select>
+    </div>
+    {% if nodos|length > 1 %}
+      <div class="campo-grupo">
+        <label for="filtro-nodo">Nodo</label>
+        <select id="filtro-nodo" name="nodo" class="campo" data-autoenviar>
+          <option value="">Todos</option>
+          {% for n in nodos %}<option value="{{ n.pk }}"{% if f.nodo and n.pk == f.nodo.pk %} selected{% endif %}>{{ n }}</option>{% endfor %}
+        </select>
+      </div>
+    {% endif %}
+    <div class="campo-grupo">
+      <label for="filtro-subsistema">Subsistema</label>
+      <select id="filtro-subsistema" name="subsistema" class="campo" data-autoenviar>
+        {% for valor, etiqueta in subsistemas %}<option value="{{ valor }}"{% if valor == f.subsistema %} selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
       </select>
     </div>
     <div class="campo-grupo">
       <label for="filtro-senal">Señal</label>
-      <select id="filtro-senal" name="senal" class="campo">
+      <select id="filtro-senal" name="senal" class="campo" data-autoenviar>
         <option value="">Todas</option>
         {% for s in senales %}<option value="{{ s.codigo }}"{% if f.senal and s.pk == f.senal.pk %} selected{% endif %}>{{ s.nombre }}</option>{% endfor %}
       </select>
     </div>
     <div class="campo-grupo campo-fecha">
       <label for="filtro-desde">Desde</label>
-      <input id="filtro-desde" type="date" name="desde" class="campo" value="{{ f.desde|date:'Y-m-d' }}">
+      <input id="filtro-desde" type="date" name="desde" class="campo" value="{{ f.desde|date:'Y-m-d' }}" data-autoenviar>
     </div>
     <div class="campo-grupo campo-fecha">
       <label for="filtro-hasta">Hasta</label>
-      <input id="filtro-hasta" type="date" name="hasta" class="campo" value="{{ f.hasta|date:'Y-m-d' }}">
+      <input id="filtro-hasta" type="date" name="hasta" class="campo" value="{{ f.hasta|date:'Y-m-d' }}" data-autoenviar>
     </div>
     <div class="campo-grupo">
       <label for="filtro-calidad">Calidad</label>
-      <select id="filtro-calidad" name="calidad" class="campo">
+      <select id="filtro-calidad" name="calidad" class="campo" data-autoenviar>
         {% for valor, etiqueta in calidades %}<option value="{{ valor }}"{% if valor == f.calidad %} selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
       </select>
     </div>
-    <div><button type="submit" class="btn btn-primario">Consultar</button></div>
+    {% if f.cliente or f.autobus or f.subsistema or f.senal or f.calidad %}
+      <div class="acciones"><a href="{% url 'tablero:historial' %}" class="btn btn-texto">Quitar filtros</a></div>
+    {% endif %}
   </form>
+  {% if f.senal and not grafica %}
+    <p class="contador-resultados">Para ver la gráfica de {{ f.senal.nombre }}, elige una unidad{% if nodos|length > 1 %} y uno de sus nodos{% endif %}.</p>
+  {% endif %}
 
   <div class="indicadores">
     <div class="indicador">
@@ -88,38 +120,12 @@
 
   {% if grafica %}
     <section class="panel">
-      <div class="panel-encabezado"><h3>{{ f.senal.nombre }} · {{ f.nodo.gateway.vehiculo.identificador }}</h3><span class="contador">línea roja: umbral de alerta</span></div>
+      <div class="panel-encabezado"><h3>{{ f.senal.nombre }} · {{ f.nodo_grafica.gateway.vehiculo.identificador }}</h3><span class="contador">línea roja: umbral de alerta</span></div>
       <div class="panel-cuerpo">
         <div class="grafica grafica-chica"><canvas id="grafica-historial" role="img" aria-label="Gráfica de {{ f.senal.nombre }} en el periodo"></canvas></div>
       </div>
     </section>
   {% endif %}
-
-  {% if puede_exportar %}
-    <details class="ayuda">
-      <summary>Exportar a CSV (Excel)</summary>
-      <form method="get" action="{% url 'tablero:historial_exportar' %}" class="panel-cuerpo filtros">
-        <input type="hidden" name="desde" value="{{ f.desde|date:'Y-m-d' }}">
-        <input type="hidden" name="hasta" value="{{ f.hasta|date:'Y-m-d' }}">
-        {% if f.nodo %}<input type="hidden" name="nodo" value="{{ f.nodo.pk }}">{% endif %}
-        {% if f.senal %}<input type="hidden" name="senal" value="{{ f.senal.codigo }}">{% endif %}
-        {% if f.calidad %}<input type="hidden" name="calidad" value="{{ f.calidad }}">{% endif %}
-        <div class="campo-grupo">
-          <label for="exportar-tipo">Qué exportar</label>
-          <select id="exportar-tipo" name="tipo" class="campo">
-            {% for valor, etiqueta in exportables %}<option value="{{ valor }}">{{ etiqueta }}</option>{% endfor %}
-          </select>
-        </div>
-        <div class="campo-grupo campo-ancho">
-          <label for="exportar-motivo">Motivo</label>
-          <input id="exportar-motivo" name="motivo" class="campo" required maxlength="200" placeholder="Ejemplo: análisis de fallas del A/C para ingeniería">
-        </div>
-        <div><button type="submit" class="btn btn-secundario">Descargar CSV</button></div>
-      </form>
-      <p class="secundario">Se exporta con los filtros de arriba. La descarga queda registrada en la bitácora con tu usuario y el motivo.</p>
-    </details>
-  {% endif %}
-
   <section class="panel">
     <div class="panel-encabezado"><h3>Lecturas</h3><span class="contador">de la más reciente a la más antigua</span></div>
     <div class="tabla-contenedor">

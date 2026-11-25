@@ -30,7 +30,7 @@ Usuario = get_user_model()
 
 # Qué puede hacer cada rol, en palabras (se arma a partir de los permisos de roles.py).
 ACCIONES = [
-    ("telemetria.ver_tablero", "Ver resumen, alertas, dispositivos, historial y órdenes"),
+    ("telemetria.ver_tablero", "Ver resumen, alertas, autobuses, historial y órdenes"),
     ("telemetria.atender_alerta", "Atender y resolver alertas"),
     ("servicio.gestionar_ordenes", "Crear y avanzar órdenes de servicio"),
     ("servicio.validar_ordenes", "Validar, cerrar y cancelar órdenes"),

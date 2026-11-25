@@ -1,18 +1,17 @@
 from django.urls import path
 
-from . import api, flota, views, ordenes, analisis, historial, usuarios
+from . import api, autobuses, flota, views, ordenes, analisis, historial, usuarios
 
 app_name = "tablero"
 
 urlpatterns = [
     path("", flota.ResumenFlotaView.as_view(), name="resumen"),
-    # Monitoreo en vivo de un autobús (la pantalla de resumen anterior); se adaptará a varios autobuses después.
-    path("monitoreo/", views.ResumenView.as_view(), name="monitoreo"),
+    path("autobuses/", autobuses.AutobusesView.as_view(), name="autobuses"),
+    path("autobuses/<int:pk>/monitoreo/", views.MonitoreoView.as_view(), name="monitoreo"),
     path("senal/<str:codigo>/", views.SenalView.as_view(), name="senal"),
     path("alertas/", views.AlertasView.as_view(), name="alertas"),
     path("alertas/<int:pk>/atender/", views.AtenderAlertaView.as_view(), name="atender_alerta"),
     path("seguridad/", views.SeguridadView.as_view(), name="seguridad"),
-    path("dispositivos/", views.DispositivosView.as_view(), name="dispositivos"),
     path("dispositivos/<str:tipo>/<int:pk>/rotar-clave/", views.RotarClaveView.as_view(), name="rotar_clave"),
     path("dispositivos/<str:tipo>/<int:pk>/estado/", views.CambiarEstadoView.as_view(), name="cambiar_estado"),
     path("exportar/", views.ExportarView.as_view(), name="exportar"),

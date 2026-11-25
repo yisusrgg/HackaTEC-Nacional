@@ -39,6 +39,6 @@
     </div>
   </section>
 
-  <div><a href="{% url 'tablero:dispositivos' %}" class="btn btn-primario">Listo, volver a dispositivos</a></div>
+  <div><a href="{% url 'tablero:autobuses' %}?q={% if tipo == 'nodo' %}{{ dispositivo.gateway.vehiculo.identificador|urlencode }}{% else %}{{ dispositivo.vehiculo.identificador|urlencode }}{% endif %}" class="btn btn-primario">Listo, volver al autobús</a></div>
 </div>
 {% endblock %}
