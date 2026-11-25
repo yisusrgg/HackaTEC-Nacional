@@ -17,10 +17,6 @@
   <p class="menu-grupo">Servicio</p>
   <a href="{% url 'tablero:alertas' %}" class="menu-enlace{% if actual == 'alertas' %} activo{% endif %}"{% if actual == 'alertas' %} aria-current="page"{% endif %}>Alertas</a>
   <a href="{% url 'tablero:ordenes' %}" class="menu-enlace{% if actual == 'ordenes' or actual == 'orden' or actual == 'orden_nueva' %} activo{% endif %}"{% if actual == 'ordenes' %} aria-current="page"{% endif %}>Órdenes de servicio</a>
-{% elif perms.servicio.solo_asignadas %}
-  <p class="menu-grupo">Servicio</p>
-  <a href="{% url 'tablero:ordenes' %}" class="menu-enlace{% if actual == 'ordenes' or actual == 'orden' %} activo{% endif %}"{% if actual == 'ordenes' %} aria-current="page"{% endif %}>Órdenes de servicio</a>
-  <a href="{% url 'tablero:autobuses' %}" class="menu-enlace{% if actual == 'autobuses' or actual == 'ficha' or actual == 'monitoreo' or actual == 'senal' or actual == 'componente' %} activo{% endif %}"{% if actual == 'autobuses' %} aria-current="page"{% endif %}>Unidades</a>
 {% endif %}
 
 {% if perms.confiabilidad.gestionar_catalogo or perms.telemetria.gestionar_dispositivos or perms.auditoria.ver_auditoria or perms.auth.view_user or user.is_staff %}

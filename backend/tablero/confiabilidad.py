@@ -20,7 +20,6 @@ from servicio.analisis import CALIDAD_MINIMA
 from telemetria.models import Lote, Medicion, Nodo, Senal, Vehiculo
 
 from . import filtros
-from .acceso import AccesoPorUnidadMixin, exigir_unidad
 from .forms_confiabilidad import FormularioContador, FormularioSenal, FormularioTipo
 from .views import Sev, Tipo, VistaProtegida
 
@@ -103,16 +102,16 @@ class TipoComponenteView(VistaProtegida, TemplateView):
         return contexto
 
 
-class ComponenteView(AccesoPorUnidadMixin, VistaProtegida, TemplateView):
+class ComponenteView(VistaProtegida, TemplateView):
     """P12: una pieza concreta: cuánto lleva, cuánto le queda y qué le ha pasado."""
 
+    permission_required = "telemetria.ver_tablero"
     template_name = "tablero/componente.html"
 
     def get_context_data(self, **kwargs):
         contexto = super().get_context_data(**kwargs)
         componente = get_object_or_404(ComponenteInstalado.objects.select_related("tipo", "vehiculo__cliente"),
                                        pk=self.kwargs["pk"])
-        exigir_unidad(self.request, componente.vehiculo_id)
         puede_corregir = self.request.user.has_perm("confiabilidad.gestionar_catalogo")
         contexto.update(
             componente=componente,

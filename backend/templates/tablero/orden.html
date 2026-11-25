@@ -12,9 +12,6 @@
       <h2 class="titulo-pantalla">{{ orden.titulo }} <small class="mono">{{ orden.folio }}</small></h2>
     </div>
     <div class="pantalla-acciones">
-      {% if orden.aprobacion == "PENDIENTE" %}<span class="etiqueta etiqueta-aviso">Por validar</span>
-      {% elif orden.aprobacion == "APROBADA" %}<span class="etiqueta etiqueta-ok">Aprobada</span>
-      {% elif orden.aprobacion == "DEVUELTA" %}<span class="etiqueta etiqueta-critico">Devuelta al técnico</span>{% endif %}
       {% include "tablero/_etapa.html" with etapa=orden.etapa %}
     </div>
   </div>
@@ -36,28 +33,6 @@
         <b>Cierre</b><span>{% if orden.cerrada_en %}{{ orden.get_resultado_display }} · {{ orden.cerrada_en|date:"d/m H:i" }}{% else %}pendiente{% endif %}</span>
       </li>
     </ol>
-  {% endif %}
-
-  {% if orden.aprobacion == "PENDIENTE" and puede_validar %}
-    <section class="panel panel-destacado">
-      <div class="panel-encabezado"><h3>Revisión del trabajo</h3><span class="secundario texto-chico">lo registró un técnico de convenio; la falla cuenta en los análisis hasta que lo apruebes</span></div>
-      <div class="panel-cuerpo dos-campos">
-        <form method="post" action="{% url 'tablero:orden_accion' orden.pk %}" class="formulario">
-          {% csrf_token %}<input type="hidden" name="accion" value="aprobar">
-          <div class="campo-grupo"><label for="texto-aprobar">Comentario (opcional)</label><input id="texto-aprobar" name="texto" class="campo" maxlength="500"></div>
-          <div><button type="submit" class="btn btn-primario btn-chico">Aprobar</button></div>
-        </form>
-        <form method="post" action="{% url 'tablero:orden_accion' orden.pk %}" class="formulario">
-          {% csrf_token %}<input type="hidden" name="accion" value="devolver">
-          <div class="campo-grupo"><label for="texto-devolver">Qué debe corregir</label><input id="texto-devolver" name="texto" class="campo" maxlength="500" required></div>
-          <div><button type="submit" class="btn btn-peligro-borde btn-chico">Devolver al técnico</button></div>
-        </form>
-      </div>
-    </section>
-  {% elif orden.aprobacion == "PENDIENTE" %}
-    <div class="mensaje mensaje-aviso">El administrador revisará lo que registraste antes de que la falla cuente en los análisis.</div>
-  {% elif orden.aprobacion == "DEVUELTA" and orden.abierta %}
-    <div class="mensaje mensaje-error">El administrador devolvió la orden: revisa su comentario en el registro de abajo y vuelve a registrar la reparación.</div>
   {% endif %}
 
   {% if diagnostico_sistema %}
@@ -208,7 +183,7 @@
       <div class="panel-encabezado">
         <h3>Falla registrada</h3>
         <span>{% if falla.prematura %}<span class="etiqueta etiqueta-critico">Falla prematura</span>{% else %}<span class="etiqueta">{{ falla.get_momento_display }}</span>{% endif %}
-          {% if falla.confirmada %}<span class="etiqueta etiqueta-ok">Cuenta en los análisis</span>{% else %}<span class="etiqueta etiqueta-apagado">Cuenta al cerrar{% if orden.aprobacion == "PENDIENTE" %} y aprobar{% endif %}</span>{% endif %}</span>
+          {% if falla.confirmada %}<span class="etiqueta etiqueta-ok">Cuenta en los análisis</span>{% else %}<span class="etiqueta etiqueta-apagado">Cuenta al cerrar la orden</span>{% endif %}</span>
       </div>
       <dl class="ficha ficha-sin-borde">
         <div><dt>Pieza retirada</dt><dd><a href="{% url 'tablero:componente' falla.componente_id %}">{{ falla.componente.tipo.nombre }}</a><small>serie {{ falla.componente.numero_serie|default:"—" }}</small></dd></div>

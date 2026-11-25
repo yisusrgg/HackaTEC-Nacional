@@ -21,7 +21,6 @@ from servicio.models import OrdenServicio
 from telemetria.models import Alerta, Medicion, Senal, Severidad
 
 from . import filtros
-from .acceso import solo_asignadas
 from .views import VistaProtegida
 
 PERIODOS = [(90, "Últimos 90 días"), (180, "Últimos 6 meses"), (365, "Último año")]
@@ -38,7 +37,7 @@ class InicioView(LoginRequiredMixin, View):
             return redirect("tablero:panorama")
         if u.has_perm("auth.change_user"):
             return redirect("tablero:usuarios")
-        if solo_asignadas(u) or (u.has_perm("telemetria.ver_tablero") and u.has_perm("servicio.gestionar_ordenes")):
+        if u.has_perm("telemetria.ver_tablero") and u.has_perm("servicio.gestionar_ordenes"):
             return redirect(reverse("tablero:ordenes") + "?estado=mis")
         if u.has_perm("telemetria.ver_tablero"):
             return redirect("tablero:panorama")
@@ -77,7 +76,7 @@ def calcular(f, ahora=None):
             "cerca": componentes.filter(vida_pct__gte=PORCENTAJE_CERCA_DEL_LIMITE).count(),
             "prematuras_mes": fallas.filter(momento=Falla.Momento.TEMPRANA, fecha__gte=ahora - timedelta(days=30)).count(),
             "en_validacion": ordenes.filter(etapa=OrdenServicio.Etapa.VALIDACION).count(),
-            "por_aprobar": ordenes.filter(aprobacion=OrdenServicio.Aprobacion.PENDIENTE).count(),
+            "abiertas": ordenes.filter(etapa__in=OrdenServicio.ABIERTAS).count(),
         },
         "atencion": list(criticas_sin_orden.select_related("senal", "nodo__gateway__vehiculo__cliente",
                                                             "gateway__vehiculo__cliente").order_by("creada")[:10]),

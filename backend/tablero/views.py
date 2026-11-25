@@ -23,7 +23,6 @@ from telemetria.models import Alerta, Cliente, Gateway, Medicion, Nodo, Region, 
 
 from .api import alertas_del_autobus, nodo_seleccionado
 from .permisos import PermisoAuditadoMixin
-from .acceso import AccesoPorUnidadMixin, exigir_unidad, solo_asignadas
 
 Tipo = EventoSeguridad.Tipo
 Sev = EventoSeguridad.Severidad
@@ -41,9 +40,10 @@ def _fecha(texto):
         return None
 
 
-class MonitoreoView(AccesoPorUnidadMixin, VistaProtegida, TemplateView):
+class MonitoreoView(VistaProtegida, TemplateView):
     """Pestaña «En vivo» de la ficha de UNA unidad: /autobuses/<id>/monitoreo/?nodo=<id del nodo>."""
 
+    permission_required = "telemetria.ver_tablero"
     template_name = "tablero/monitoreo.html"
 
     def get_context_data(self, **kwargs):
@@ -51,7 +51,6 @@ class MonitoreoView(AccesoPorUnidadMixin, VistaProtegida, TemplateView):
 
         contexto = super().get_context_data(**kwargs)
         vehiculo = get_object_or_404(Vehiculo.objects.select_related("cliente"), pk=self.kwargs["pk"])
-        exigir_unidad(self.request, vehiculo.pk)
         nodo = nodo_seleccionado(self.request.GET.get("nodo"), vehiculo=vehiculo)
         senales = list(Senal.objects.filter(visible=True).exclude(subsistema=Senal.Subsistema.NODO))
         grupos = []
@@ -77,7 +76,8 @@ class MonitoreoView(AccesoPorUnidadMixin, VistaProtegida, TemplateView):
         return contexto
 
 
-class SenalView(AccesoPorUnidadMixin, VistaProtegida, DetailView):
+class SenalView(VistaProtegida, DetailView):
+    permission_required = "telemetria.ver_tablero"
     template_name = "tablero/senal.html"
     model = Senal
     slug_field = "codigo"
@@ -88,10 +88,6 @@ class SenalView(AccesoPorUnidadMixin, VistaProtegida, DetailView):
         contexto = super().get_context_data(**kwargs)
         senal = self.object
         nodo = nodo_seleccionado(self.request.GET.get("nodo"))
-        if solo_asignadas(self.request.user) and nodo is None:
-            raise Http404
-        if nodo:
-            exigir_unidad(self.request, nodo.gateway.vehiculo_id)
         regresar_a = (reverse("tablero:monitoreo", args=[nodo.gateway.vehiculo_id]) + f"?nodo={nodo.pk}"
                       if nodo else reverse("tablero:autobuses"))
         contexto.update(

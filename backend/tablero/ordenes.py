@@ -1,13 +1,14 @@
 """Pantallas de órdenes de servicio: listado, alta, detalle con validación y acciones.
 
 Además de reparar, la orden registra por qué falló la pieza (causa del catálogo), qué componente se cambió y con
-cuántos ciclos u horas falló: de ahí salen las fallas que usa Confiabilidad. Lo que registra un técnico de
-convenio queda «Por validar» hasta que el Administrador lo aprueba o lo devuelve.
+cuántos ciclos u horas falló: de ahí salen las fallas que usa Confiabilidad. Quién hizo cada cosa queda en el
+registro de avances con su usuario.
 """
 from datetime import timedelta
 
 from django.conf import settings
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
@@ -25,60 +26,42 @@ from servicio.forms import FormularioOrden
 from servicio.models import AvanceOrden, OrdenServicio
 from telemetria.models import Alerta, Medicion, Nodo, Senal, Vehiculo
 
-from .acceso import AccesoPorUnidadMixin, negar, solo_asignadas
 from .api import _reducir
 from .views import Sev, Tipo, VistaProtegida
 
 Etapa = OrdenServicio.Etapa
-Aprobacion = OrdenServicio.Aprobacion
 TipoAvance = AvanceOrden.Tipo
 
 
-def ordenes_visibles(usuario):
-    consulta = OrdenServicio.objects.all()
-    return consulta.filter(responsable=usuario) if solo_asignadas(usuario) else consulta
-
-
-def exigir_orden(request, orden):
-    if solo_asignadas(request.user) and orden.responsable_id != request.user.pk:
-        negar(request, "orden no asignada", orden=orden.pk)
-
-
-class OrdenesView(AccesoPorUnidadMixin, VistaProtegida, ListView):
+class OrdenesView(VistaProtegida, ListView):
+    permission_required = "telemetria.ver_tablero"
     template_name = "tablero/ordenes.html"
     context_object_name = "ordenes"
     paginate_by = 25
 
-    FILTROS = {"mis": OrdenServicio.ABIERTAS, "abiertas": OrdenServicio.ABIERTAS, "por_validar": None,
+    FILTROS = {"mis": OrdenServicio.ABIERTAS, "abiertas": OrdenServicio.ABIERTAS,
                "cerradas": (Etapa.CERRADA, Etapa.CANCELADA), "todas": None}
 
     def get_queryset(self):
         validacion.actualizar_en_validacion()
-        restringido = solo_asignadas(self.request.user)
-        self.filtro = self.request.GET.get("estado", "mis" if restringido else "abiertas")
+        self.filtro = self.request.GET.get("estado", "abiertas")
         if self.filtro not in self.FILTROS:
             self.filtro = "abiertas"
-        consulta = ordenes_visibles(self.request.user).select_related(
+        consulta = OrdenServicio.objects.select_related(
             "vehiculo__cliente", "responsable", "senal", "componente__tipo")
         if self.filtro == "mis":
             consulta = consulta.filter(responsable=self.request.user)
-        if self.filtro == "por_validar":
-            consulta = consulta.filter(aprobacion=Aprobacion.PENDIENTE)
         etapas = self.FILTROS[self.filtro]
         return consulta.filter(etapa__in=etapas) if etapas else consulta
 
     def get_context_data(self, **kwargs):
         contexto = super().get_context_data(**kwargs)
-        visibles = ordenes_visibles(self.request.user)
-        filtros = [("mis", "Mis pendientes"), ("abiertas", "Abiertas"), ("por_validar", "Por validar"),
-                   ("cerradas", "Cerradas"), ("todas", "Todas")]
-        if solo_asignadas(self.request.user):
-            filtros = [("mis", "Mis pendientes"), ("cerradas", "Cerradas"), ("todas", "Todas")]
+        visibles = OrdenServicio.objects.all()
+        filtros = [("mis", "Mis pendientes"), ("abiertas", "Abiertas"), ("cerradas", "Cerradas"), ("todas", "Todas")]
         contexto.update(
             filtro=self.filtro, parametros=f"estado={self.filtro}", filtros=filtros,
             pasos=range(len(OrdenServicio.PASOS)),
             conteo={etapa: visibles.filter(etapa=etapa).count() for etapa in OrdenServicio.ABIERTAS},
-            por_validar=visibles.filter(aprobacion=Aprobacion.PENDIENTE).count(),
             mis=visibles.filter(responsable=self.request.user, etapa__in=OrdenServicio.ABIERTAS).count(),
         )
         return contexto
@@ -162,16 +145,12 @@ class NuevaOrdenView(VistaProtegida, View):
         return redirect("tablero:orden", pk=orden.pk)
 
 
-class OrdenView(AccesoPorUnidadMixin, VistaProtegida, DetailView):
+class OrdenView(VistaProtegida, DetailView):
+    permission_required = "telemetria.ver_tablero"
     template_name = "tablero/orden.html"
     context_object_name = "orden"
     queryset = OrdenServicio.objects.select_related("vehiculo__cliente", "nodo", "senal", "alerta", "responsable",
                                                     "creada_por", "componente__tipo", "causa")
-
-    def get_object(self, queryset=None):
-        orden = super().get_object(queryset)
-        exigir_orden(self.request, orden)
-        return orden
 
     def get_context_data(self, **kwargs):
         contexto = super().get_context_data(**kwargs)
@@ -223,23 +202,22 @@ def _datos_grafica(orden):
 
 
 class OrdenAccionView(VistaProtegida, View):
-    """Acciones sobre una orden. Avanzar y anotar: técnicos y Administrador (el técnico de convenio, solo en sus
-    órdenes). Validar, cancelar, aprobar y devolver: solo el Administrador. Ingeniería solo consulta."""
+    """Acciones sobre una orden. Avanzar y anotar: Técnico y Administrador. Validar y cancelar: solo el
+    Administrador. Ingeniería solo consulta."""
 
     permission_required = "servicio.gestionar_ordenes"
-    SOLO_VALIDADOR = {"validar", "cancelar", "aprobar", "devolver"}
-    SIEMPRE = {"nota", "aprobar", "devolver"}  # se permiten aunque la orden ya esté cerrada
+    SOLO_VALIDADOR = {"validar", "cancelar"}
 
     def post(self, request, pk):
-        orden = get_object_or_404(OrdenServicio.objects.select_related("senal", "alerta", "componente__tipo",
-                                                                       "responsable"), pk=pk)
-        exigir_orden(request, orden)
+        orden = get_object_or_404(OrdenServicio.objects.select_related("senal", "alerta", "componente__tipo"), pk=pk)
         accion = request.POST.get("accion", "")
         texto = request.POST.get("texto", "").strip()[:2000]
         if accion in self.SOLO_VALIDADOR and not request.user.has_perm("servicio.validar_ordenes"):
-            negar(request, "acción solo para el Administrador", accion=accion, permiso=["servicio.validar_ordenes"])
+            registrar(Tipo.ACCESO_DENEGADO, severidad=Sev.ADVERTENCIA, actor=request.user.get_username(), ip=ip_de(request),
+                      detalle={"ruta": request.path, "accion": accion, "permiso": ["servicio.validar_ordenes"]})
+            raise PermissionDenied
         metodo = getattr(self, f"_{accion}", None)
-        if metodo is None or (accion not in self.SIEMPRE and not orden.abierta):
+        if metodo is None or (accion != "nota" and not orden.abierta):
             messages.error(request, "La orden ya no admite esa acción.")
             return redirect("tablero:orden", pk=orden.pk)
         with transaction.atomic():
@@ -314,10 +292,7 @@ class OrdenAccionView(VistaProtegida, View):
         orden.solucion = texto
         orden.etapa = Etapa.VALIDACION
         orden.validacion_inicio = timezone.now()
-        if solo_asignadas(request.user):
-            orden.aprobacion = Aprobacion.PENDIENTE
-        orden.save(update_fields=["solucion", "causa", "componente", "etapa", "validacion_inicio", "aprobacion",
-                                  "actualizada"])
+        orden.save(update_fields=["solucion", "causa", "componente", "etapa", "validacion_inicio", "actualizada"])
         detalle = (f"Empieza la validación de {orden.get_minutos_validacion_display()}." if orden.tiene_criterio
                    else "Sin señal para validar con datos: queda en espera de que el Administrador la valide.")
         cambio = ""
@@ -325,8 +300,7 @@ class OrdenAccionView(VistaProtegida, View):
             cambio = (f" Se cambió {falla.componente.tipo.nombre.lower()} con {falla.uso_al_fallar:,.0f} "
                       f"{falla.componente.tipo.unidad_texto} ({falla.porcentaje_garantia:.0f} % de la garantía"
                       f"{', falla prematura' if falla.prematura else ''}).")
-        aprobacion = " Queda por validar por el Administrador." if orden.aprobacion == Aprobacion.PENDIENTE else ""
-        orden.anotar(f"Reparación terminada: {texto} Causa: {causa}.{cambio} {detalle}{aprobacion}",
+        orden.anotar(f"Reparación terminada: {texto} Causa: {causa}.{cambio} {detalle}",
                      autor=request.user, tipo=TipoAvance.ETAPA)
         return "Reparación registrada. " + detalle
 
@@ -356,39 +330,6 @@ class OrdenAccionView(VistaProtegida, View):
         orden.save(update_fields=["etapa", "resultado", "cerrada_en", "actualizada"])
         orden.anotar(f"Orden cancelada: {texto}", autor=request.user, tipo=TipoAvance.ETAPA)
         return f"Orden {orden.folio} cancelada."
-
-    def _aprobar(self, request, orden, texto):
-        if orden.aprobacion != Aprobacion.PENDIENTE:
-            messages.error(request, "La orden no está por validar.")
-            return None
-        orden.aprobacion = Aprobacion.APROBADA
-        orden.save(update_fields=["aprobacion", "actualizada"])
-        orden.anotar("El Administrador aprobó lo registrado por el técnico de convenio." + (f" {texto}" if texto else ""),
-                     autor=request.user, tipo=TipoAvance.ETAPA)
-        confirmadas = confiabilidad.confirmar_falla(orden)
-        registrar(Tipo.ORDEN_APROBACION, actor=request.user.get_username(), ip=ip_de(request),
-                  detalle={"orden": orden.folio, "accion": "aprobar", "tecnico": orden.responsable.get_username()
-                           if orden.responsable else ""})
-        return "Trabajo aprobado." + (" La falla ya cuenta en los análisis." if confirmadas else
-                                      " La falla contará cuando la orden se cierre." if orden.abierta else "")
-
-    def _devolver(self, request, orden, texto):
-        if orden.aprobacion != Aprobacion.PENDIENTE:
-            messages.error(request, "La orden no está por validar.")
-            return None
-        if not texto:
-            messages.error(request, "Explica al técnico qué debe corregir.")
-            return None
-        orden.aprobacion = Aprobacion.DEVUELTA
-        orden.etapa = Etapa.REPARACION
-        orden.validacion_inicio = None
-        orden.resultado = OrdenServicio.Resultado.PENDIENTE
-        orden.cerrada_en = None
-        orden.save(update_fields=["aprobacion", "etapa", "validacion_inicio", "resultado", "cerrada_en", "actualizada"])
-        orden.anotar(f"El Administrador devolvió la orden al técnico: {texto}", autor=request.user, tipo=TipoAvance.ETAPA)
-        registrar(Tipo.ORDEN_APROBACION, severidad=Sev.ADVERTENCIA, actor=request.user.get_username(), ip=ip_de(request),
-                  detalle={"orden": orden.folio, "accion": "devolver", "motivo": texto})
-        return "Orden devuelta al técnico."
 
 
 def _causa(request):

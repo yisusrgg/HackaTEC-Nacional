@@ -1,8 +1,7 @@
 """
 Cálculos de confiabilidad: ¿los componentes duran lo que promete el fabricante?
 
-Solo cuentan las fallas confirmadas (orden cerrada y, si la trabajó un técnico de convenio, aprobada por
-Ingeniería). Todo se calcula en la base con fallas y contadores ya sumados, sin leer las lecturas crudas.
+Solo cuentan las fallas confirmadas (las de órdenes ya cerradas). Todo se calcula en la base con fallas y contadores ya sumados, sin leer las lecturas crudas.
 """
 from django.db.models import Avg, Count, F, Q
 

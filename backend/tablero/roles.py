@@ -2,17 +2,18 @@
 
 - Ingeniería analiza: ve toda la flota, las alertas, los datos y la confiabilidad, y solo edita los datos de los
   componentes (catálogo, umbrales y contadores). No toca órdenes ni dispositivos.
-- Técnico (de Volvo): repara. Crea órdenes desde las alertas y las trabaja.
-- Técnico de convenio: taller externo; solo sus órdenes asignadas y las unidades de esas órdenes.
+- Técnico (de Volvo o de un taller con convenio: un solo rol; quién hizo cada cosa se sabe por su usuario):
+  repara. Crea órdenes desde las alertas y las trabaja.
 - Administrador: administra usuarios y, cuando hace falta o algo falla, interviene: valida, cancela o reasigna
-  órdenes, aprueba o devuelve el trabajo del técnico de convenio y gestiona los dispositivos.
+  órdenes y gestiona los dispositivos.
 """
 from django.contrib.auth.models import Group, Permission
 
 ADMINISTRADOR = "Administrador"
 INGENIERIA = "Ingeniería"
-TECNICO = "Técnico"  # técnico de Volvo
-TECNICO_CONVENIO = "Técnico de convenio"  # taller externo: solo sus órdenes asignadas
+TECNICO = "Técnico"
+# Rol que existió antes; sus usuarios pasan a Técnico al correr crear_roles().
+ROLES_RETIRADOS = ["Técnico de convenio"]
 
 ROLES = {
     ADMINISTRADOR: [
@@ -47,9 +48,6 @@ ROLES = {
         "confiabilidad.gestionar_catalogo",
     ],
     TECNICO: ["telemetria.ver_tablero", "servicio.gestionar_ordenes"],
-    # Sin ver_tablero: no ve la flota, solo «Mis órdenes» y las unidades de esas órdenes. Lo que registra lo
-    # aprueba el Administrador antes de que cuente en los análisis.
-    TECNICO_CONVENIO: ["servicio.gestionar_ordenes", "servicio.solo_asignadas"],
 }
 
 
@@ -61,3 +59,7 @@ def crear_roles():
             app, codename = permiso.split(".")
             objetos.append(Permission.objects.get(content_type__app_label=app, codename=codename))
         grupo.permissions.set(objetos)
+    tecnico = Group.objects.get(name=TECNICO)
+    for retirado in Group.objects.filter(name__in=ROLES_RETIRADOS):
+        tecnico.user_set.add(*retirado.user_set.all())
+        retirado.delete()

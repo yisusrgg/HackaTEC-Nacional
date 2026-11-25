@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 
 from confiabilidad.models import ComponenteInstalado
-from tablero.roles import TECNICO, TECNICO_CONVENIO
+from tablero.roles import TECNICO
 from telemetria.models import Nodo, Senal
 
 from .models import OrdenServicio
@@ -24,7 +24,7 @@ class FormularioOrden(forms.ModelForm):
         }
         help_texts = {
             "componente": "De los instalados en la unidad. Si se cambia, sus ciclos u horas quedan como vida a la falla.",
-            "responsable": "Técnico Volvo o técnico de un taller con convenio (lo que registre el de convenio lo valida el Administrador).",
+            "responsable": "Técnico que hará la reparación, de Volvo o de un taller con convenio.",
             "senal": "Después de la reparación, la orden se valida sola si esta señal se mantiene dentro de sus umbrales.",
             "minutos_validacion": "Tiempo que la señal debe mantenerse sin fallas para cerrar la orden.",
         }
@@ -37,15 +37,11 @@ class FormularioOrden(forms.ModelForm):
         super().__init__(*args, **kwargs)
         Usuario = get_user_model()
         self.fields["responsable"].queryset = (
-            Usuario.objects.filter(is_active=True, groups__name__in=[TECNICO, TECNICO_CONVENIO])
-            .distinct().order_by("username").prefetch_related("groups")
+            Usuario.objects.filter(is_active=True, groups__name=TECNICO)
+            .distinct().order_by("username")
         )
 
-        def etiqueta_usuario(u):
-            nombre = u.get_full_name() or u.get_username()
-            return f"{nombre} · convenio" if any(g.name == TECNICO_CONVENIO for g in u.groups.all()) else nombre
-
-        self.fields["responsable"].label_from_instance = etiqueta_usuario
+        self.fields["responsable"].label_from_instance = lambda u: u.get_full_name() or u.get_username()
         self.fields["componente"].queryset = (ComponenteInstalado.objects.activos()
                                               .select_related("tipo", "vehiculo").order_by("vehiculo__identificador", "tipo__nombre"))
         self.fields["componente"].label_from_instance = (

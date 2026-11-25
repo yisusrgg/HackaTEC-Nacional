@@ -45,10 +45,10 @@
       <p class="cifra">{{ i.en_validacion }}</p>
       <p class="indicador-detalle">se cierran solas si los datos confirman la reparación</p>
     </a>
-    <a class="indicador indicador-enlace" href="{% url 'tablero:ordenes' %}?estado=por_validar">
-      <p class="rotulo">Por validar</p>
-      <p class="cifra{% if i.por_aprobar %} cifra-aviso{% endif %}">{{ i.por_aprobar }}</p>
-      <p class="indicador-detalle">trabajos de técnicos de convenio</p>
+    <a class="indicador indicador-enlace" href="{% url 'tablero:ordenes' %}?estado=abiertas">
+      <p class="rotulo">Órdenes abiertas</p>
+      <p class="cifra">{{ i.abiertas }}</p>
+      <p class="indicador-detalle">en diagnóstico, reparación o validación</p>
     </a>
   </div>
   {% endwith %}
