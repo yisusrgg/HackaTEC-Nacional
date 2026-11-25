@@ -22,13 +22,18 @@
   <p class="menu-grupo">Análisis</p>
   <a href="{% url 'tablero:analisis' %}" class="menu-enlace{% if actual == 'analisis' %} activo{% endif %}"{% if actual == 'analisis' %} aria-current="page"{% endif %}>Análisis de calidad</a>
 {% endif %}
-{% if perms.auditoria.ver_auditoria or user.is_staff %}
+{% if perms.auditoria.ver_auditoria or perms.auth.view_user or user.is_staff %}
   <p class="menu-grupo">Seguridad y sistema</p>
 {% endif %}
 {% if perms.auditoria.ver_auditoria %}
   <a href="{% url 'tablero:seguridad' %}" class="menu-enlace{% if actual == 'seguridad' %} activo{% endif %}"{% if actual == 'seguridad' %} aria-current="page"{% endif %}>Bitácora de seguridad</a>
 {% endif %}
+{% if perms.auth.view_user %}
+  <a href="{% url 'tablero:usuarios' %}" class="menu-enlace{% if actual == 'usuarios' or actual == 'usuario_nuevo' or actual == 'usuario_editar' %} activo{% endif %}"{% if actual == 'usuarios' or actual == 'usuario_nuevo' or actual == 'usuario_editar' %} aria-current="page"{% endif %}>Usuarios y roles</a>
+{% endif %}
 {% if user.is_staff %}
   <a href="{% url 'admin:index' %}" class="menu-enlace">Administración</a>
 {% endif %}
+<p class="menu-grupo">Cuenta</p>
+<a href="{% url 'cuentas:contrasena' %}" class="menu-enlace{% if actual == 'contrasena' %} activo{% endif %}"{% if actual == 'contrasena' %} aria-current="page"{% endif %}>Mi cuenta</a>
 {% endwith %}

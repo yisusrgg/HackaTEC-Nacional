@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block titulo %}{% if nuevo %}Nuevo usuario{% else %}{{ objetivo.username }}{% endif %}{% endblock %}
+{% block encabezado %}{% if nuevo %}Nuevo usuario{% else %}Editar usuario{% endif %}{% endblock %}
+
+{% block contenido %}
+<div class="pantalla angosto">
+  <div>
+    <a href="{% url 'tablero:usuarios' %}" class="enlace-discreto">← Usuarios y roles</a>
+    <p class="rotulo espacio-arriba">Control de accesos</p>
+    <h2 class="titulo-pantalla">{% if nuevo %}Nuevo usuario{% else %}{{ objetivo.get_full_name|default:objetivo.username }} <small class="mono">{{ objetivo.username }}</small>{% endif %}</h2>
+  </div>
+
+  {% if nuevo %}
+    <div class="mensaje mensaje-info">Al guardar se genera una contraseña temporal que se muestra una sola vez. Entrégasela a la persona y pídele que la cambie en «Mi cuenta» al entrar.</div>
+  {% elif not objetivo.is_active %}
+    <div class="mensaje mensaje-aviso">Este usuario está desactivado: no puede iniciar sesión.</div>
+  {% endif %}
+
+  <form method="post" class="panel" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="panel-cuerpo"><div class="mensaje mensaje-error">{{ form.non_field_errors|join:" " }}</div></div>{% endif %}
+    <div class="panel-cuerpo formulario">
+      {% if form.username %}{% include "tablero/_campo.html" with campo=form.username %}{% endif %}
+      <div class="dos-campos">
+        {% include "tablero/_campo.html" with campo=form.first_name %}
+        {% include "tablero/_campo.html" with campo=form.last_name %}
+      </div>
+      {% include "tablero/_campo.html" with campo=form.email %}
+      {% include "tablero/_campo.html" with campo=form.rol %}
+    </div>
+    <div class="panel-cuerpo borde-arriba acciones">
+      <button type="submit" class="btn btn-primario">{% if nuevo %}Crear usuario{% else %}Guardar cambios{% endif %}</button>
+      <a href="{% url 'tablero:usuarios' %}" class="btn btn-texto">Cancelar</a>
+    </div>
+  </form>
+
+  {% if not nuevo %}
+    <section class="panel">
+      <div class="panel-encabezado"><h3>Acceso</h3><span class="contador">último acceso: {{ objetivo.last_login|naturaltime|default:"nunca" }}</span></div>
+      <div class="panel-cuerpo acciones-cuenta">
+        <form method="post" action="{% url 'tablero:usuario_accion' objetivo.pk %}"
+              data-confirmar="Se generará una contraseña temporal nueva para {{ objetivo.username }} y se cerrarán sus sesiones abiertas. ¿Continuar?">
+          {% csrf_token %}<input type="hidden" name="accion" value="restablecer">
+          <button type="submit" class="btn btn-secundario btn-chico">Restablecer contraseña</button>
+          <p class="campo-ayuda">Para cuando la olvidó. La contraseña nueva se muestra una sola vez.</p>
+        </form>
+        {% if not es_yo %}
+          <form method="post" action="{% url 'tablero:usuario_accion' objetivo.pk %}"
+                data-confirmar="{% if objetivo.is_active %}{{ objetivo.username }} ya no podrá iniciar sesión. ¿Desactivar?{% else %}{{ objetivo.username }} podrá volver a iniciar sesión. ¿Reactivar?{% endif %}">
+            {% csrf_token %}
+            {% if objetivo.is_active %}
+              <input type="hidden" name="accion" value="desactivar">
+              <button type="submit" class="btn btn-peligro-borde btn-chico">Desactivar usuario</button>
+              <p class="campo-ayuda">No se borra: su historial y lo que hizo en la bitácora se conservan.</p>
+            {% else %}
+              <input type="hidden" name="accion" value="activar">
+              <button type="submit" class="btn btn-primario btn-chico">Reactivar usuario</button>
+            {% endif %}
+          </form>
+        {% else %}
+          <p class="campo-ayuda">Esta es tu cuenta: no puedes desactivarla ni cambiar tu propio rol.</p>
+        {% endif %}
+      </div>
+    </section>
+  {% endif %}
+</div>
+{% endblock %}

@@ -34,6 +34,10 @@ class EventoSeguridad(models.Model):
         DISPOSITIVO_ESTADO = "DISPOSITIVO_ESTADO", "Dispositivo activado o revocado"
         EXPORTACION = "EXPORTACION", "Exportación de datos"
         ALERTA_ATENDIDA = "ALERTA_ATENDIDA", "Alerta atendida"
+        USUARIO_CREADO = "USUARIO_CREADO", "Usuario creado"
+        USUARIO_MODIFICADO = "USUARIO_MODIFICADO", "Usuario modificado"
+        CONTRASENA_RESTABLECIDA = "CONTRASENA_RESTABLECIDA", "Contraseña restablecida por un administrador"
+        CONTRASENA_CAMBIADA = "CONTRASENA_CAMBIADA", "Contraseña cambiada por su dueño"
 
     class Severidad(models.TextChoices):
         INFO = "INFO", "Informativo"

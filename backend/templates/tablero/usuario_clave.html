@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block titulo %}Contraseña temporal{% endblock %}
+{% block encabezado %}Contraseña temporal · {{ usuario.username }}{% endblock %}
+
+{% block contenido %}
+<div class="pantalla angosto">
+  <div>
+    <p class="rotulo">Control de accesos</p>
+    <h2 class="titulo-pantalla">{% if motivo == "nuevo" %}Usuario {{ usuario.username }} creado{% else %}Contraseña restablecida para {{ usuario.username }}{% endif %}</h2>
+  </div>
+
+  <div class="mensaje mensaje-aviso">
+    <p class="mensaje-titulo">Esta contraseña se muestra una sola vez.</p>
+    <p>Entrégala a la persona en privado (no por un chat de grupo). Si se pierde, usa «Restablecer contraseña» otra vez.</p>
+  </div>
+
+  <section class="panel">
+    <div class="panel-encabezado"><h3>Datos para iniciar sesión</h3></div>
+    <dl class="ficha ficha-sin-borde">
+      <div><dt>Usuario</dt><dd class="mono">{{ usuario.username }}</dd></div>
+      <div><dt>Rol</dt><dd>{{ usuario.groups.first.name|default:"Sin rol" }}</dd></div>
+    </dl>
+    <div class="panel-cuerpo borde-arriba comando">
+      <code id="clave-temporal">{{ clave }}</code>
+      <button type="button" class="btn btn-secundario" data-copiar="#clave-temporal">Copiar</button>
+    </div>
+  </section>
+
+  <p class="secundario">Al entrar, la persona debe cambiarla en <b>Mi cuenta</b> (su nombre, arriba a la derecha).</p>
+  <div><a href="{% url 'tablero:usuarios' %}" class="btn btn-primario">Listo, volver a usuarios</a></div>
+</div>
+{% endblock %}

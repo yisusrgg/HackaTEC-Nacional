@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block titulo %}Usuarios y roles{% endblock %}
+{% block encabezado %}Usuarios y roles{% endblock %}
+
+{% block contenido %}
+<div class="pantalla">
+  <div class="pantalla-encabezado">
+    <div>
+      <p class="rotulo">Control de accesos</p>
+      <h2 class="titulo-pantalla">Usuarios y roles</h2>
+      <p class="introduccion">Cada persona tiene un solo rol, que define qué pantallas ve y qué puede hacer. Las altas, cambios de rol y desactivaciones quedan en la bitácora de seguridad.</p>
+    </div>
+    <div class="pantalla-acciones">
+      <span class="contador">{{ total_activos }} usuarios activos</span>
+      {% if perms.auth.add_user %}<a href="{% url 'tablero:usuario_nuevo' %}" class="btn btn-primario btn-chico">Nuevo usuario</a>{% endif %}
+    </div>
+  </div>
+
+  <form method="get" class="filtros" aria-label="Buscar usuarios">
+    <div class="campo-grupo campo-ancho">
+      <label for="buscar">Buscar</label>
+      <input id="buscar" name="q" class="campo" value="{{ buscar }}" placeholder="Usuario, nombre o correo">
+    </div>
+    <div class="campo-grupo">
+      <label for="filtro-rol">Rol</label>
+      <select id="filtro-rol" name="rol" class="campo" data-autoenviar>
+        <option value="">Todos</option>
+        {% for r in roles %}<option value="{{ r }}"{% if r == rol %} selected{% endif %}>{{ r }}</option>{% endfor %}
+        <option value="sin"{% if rol == "sin" %} selected{% endif %}>Sin rol</option>
+      </select>
+    </div>
+    <div><button type="submit" class="btn btn-secundario">Buscar</button></div>
+  </form>
+
+  <section class="panel">
+    <div class="tabla-contenedor">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Nombre</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Último acceso</th>
+            <th><span class="sr-only">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in usuarios %}
+            <tr{% if not u.is_active %} class="fila-inactiva"{% endif %}>
+              <td class="mono">{{ u.username }}</td>
+              <td>{{ u.get_full_name|default:"—" }}{% if u.email %}<div class="secundario texto-chico">{{ u.email }}</div>{% endif %}</td>
+              <td>
+                {% if u.rol %}<span class="etiqueta etiqueta-rol">{{ u.rol }}</span>{% else %}<span class="secundario">Sin rol</span>{% endif %}
+                {% if u.is_superuser %}<span class="etiqueta etiqueta-info">Superusuario</span>{% endif %}
+              </td>
+              <td>{% if u.is_active %}<span class="etiqueta etiqueta-ok">Activo</span>{% else %}<span class="etiqueta etiqueta-apagado">Desactivado</span>{% endif %}</td>
+              <td class="secundario">{{ u.last_login|naturaltime|default:"nunca" }}</td>
+              <td class="derecha">
+                {% if perms.auth.change_user %}{% if not u.is_superuser or user.is_superuser %}
+                  <a href="{% url 'tablero:usuario_editar' u.pk %}" class="btn btn-texto btn-chico">Editar</a>
+                {% endif %}{% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="lista-vacia">No hay usuarios con estos filtros.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {% include "tablero/_paginacion.html" %}
+
+  <section class="panel">
+    <div class="panel-encabezado"><h3>Qué puede hacer cada rol</h3><span class="contador">se define en roles.py y se aplica con «python manage.py inicializar»</span></div>
+    <div class="tabla-contenedor">
+      <table class="tabla tabla-matriz">
+        <thead>
+          <tr><th>Acción</th>{% for c in columnas %}<th class="centro">{{ c }}</th>{% endfor %}</tr>
+        </thead>
+        <tbody>
+          {% for texto, valores in matriz %}
+            <tr>
+              <td>{{ texto }}</td>
+              {% for v in valores %}<td class="centro">{% if v %}<span class="si" aria-label="Sí">✓</span>{% else %}<span class="no" aria-label="No">—</span>{% endif %}</td>{% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block titulo %}Mi cuenta{% endblock %}
+{% block encabezado %}Mi cuenta{% endblock %}
+
+{% block contenido %}
+<div class="pantalla angosto">
+  <div>
+    <p class="rotulo">{{ user.groups.first.name|default:"Sin rol" }}</p>
+    <h2 class="titulo-pantalla">{{ user.get_full_name|default:user.get_username }} <small class="mono">{{ user.get_username }}</small></h2>
+  </div>
+
+  <form method="post" class="panel" novalidate>
+    {% csrf_token %}
+    <div class="panel-encabezado"><h3>Cambiar contraseña</h3></div>
+    {% if form.non_field_errors %}<div class="panel-cuerpo"><div class="mensaje mensaje-error">{{ form.non_field_errors|join:" " }}</div></div>{% endif %}
+    <div class="panel-cuerpo formulario">
+      {% include "tablero/_campo.html" with campo=form.old_password %}
+      {% include "tablero/_campo.html" with campo=form.new_password1 %}
+      {% include "tablero/_campo.html" with campo=form.new_password2 %}
+      <p class="campo-ayuda">Mínimo 10 caracteres, que no sea parecida a tu usuario ni una contraseña común, y que no sean solo números. Al cambiarla se cierran tus sesiones abiertas en otros equipos.</p>
+    </div>
+    <div class="panel-cuerpo borde-arriba acciones">
+      <button type="submit" class="btn btn-primario">Cambiar contraseña</button>
+      <a href="{% url 'tablero:resumen' %}" class="btn btn-texto">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
