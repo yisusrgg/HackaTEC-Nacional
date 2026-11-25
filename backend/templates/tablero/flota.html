@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% load static humanize %}
+{% block titulo %}Resumen{% endblock %}
+{% block encabezado %}Resumen de la flota{% endblock %}
+
+{% block contenido %}
+<div class="pantalla">
+  <div class="pantalla-encabezado">
+    <div>
+      <p class="rotulo">Clientes y autobuses</p>
+      <h2 class="titulo-pantalla">Resumen de la flota</h2>
+      <p class="introduccion">Por cada cliente se muestran primero los autobuses en línea con alertas activas. La página se actualiza cada 30 segundos.</p>
+    </div>
+    <div class="pantalla-acciones">
+      <span class="en-vivo">Actualizado {% now "H:i" %}</span>
+    </div>
+  </div>
+
+  <div class="indicadores">
+    <div class="indicador">
+      <p class="rotulo">Clientes</p>
+      <p class="cifra">{{ totales.clientes }}</p>
+      <p class="indicador-detalle">con autobuses registrados</p>
+    </div>
+    <div class="indicador">
+      <p class="rotulo">Autobuses</p>
+      <p class="cifra">{{ totales.autobuses }}</p>
+      <p class="indicador-detalle">en todas las flotas</p>
+    </div>
+    <div class="indicador">
+      <p class="rotulo">En línea ahora</p>
+      <p class="cifra">{{ totales.en_linea }} <small>de {{ totales.autobuses }}</small></p>
+      <p class="indicador-detalle">enviaron datos hace menos de 30 s</p>
+    </div>
+    <div class="indicador">
+      <p class="rotulo">Con alertas activas</p>
+      <p class="cifra">{{ totales.con_alertas }} <small>autobuses</small></p>
+      <p class="indicador-detalle">{{ totales.criticas }} alerta{{ totales.criticas|pluralize }} crítica{{ totales.criticas|pluralize }}{% if totales.sin_autobus %} · {{ totales.sin_autobus }} sin autobús asociado{% endif %}</p>
+    </div>
+  </div>
+
+  {% if clientes %}
+    <div class="flota">
+      {% for t in clientes %}
+        <section class="panel cliente{% if t.severidad == 'CRITICA' %} cliente-critico{% elif t.severidad %} cliente-aviso{% endif %}">
+          <div class="panel-encabezado">
+            <div>
+              <h3>{{ t.cliente.nombre_comercial }}</h3>
+              <p class="cliente-meta">
+                {% if t.cliente.segmento %}{{ t.cliente.get_segmento_display }} · {% endif %}{{ t.total }} autob{{ t.total|pluralize:"ús,uses" }}{% if t.total %} · {{ t.en_linea }} en línea{% endif %}
+              </p>
+            </div>
+            {% if t.con_alertas %}
+              {% include "tablero/_severidad.html" with severidad=t.severidad %}
+            {% elif t.total %}
+              <span class="etiqueta etiqueta-ok">Sin alertas</span>
+            {% endif %}
+          </div>
+
+          {% if t.destacados %}
+            <ul class="autobuses">
+              {% for a in t.destacados %}
+                <li class="autobus">
+                  <div class="autobus-id">
+                    <span class="autobus-codigo">{{ a.vehiculo.identificador }}</span>
+                    <span class="autobus-nombre">{{ a.vehiculo.nombre }}</span>
+                  </div>
+                  <div class="autobus-estado">
+                    {% if a.conexion == "en_linea" %}<span class="etiqueta etiqueta-ok">En línea</span>
+                    {% elif a.conexion == "sin_senal" %}<span class="etiqueta etiqueta-apagado">Sin señal</span>
+                    {% elif a.conexion == "sin_conectar" %}<span class="etiqueta etiqueta-apagado">Nunca se ha conectado</span>
+                    {% elif a.conexion == "revocado" %}<span class="etiqueta etiqueta-critico">Acceso revocado</span>
+                    {% else %}<span class="etiqueta etiqueta-apagado">Sin dispositivo</span>{% endif %}
+                    <span class="autobus-contacto">{% if a.ultimo_contacto %}Última señal {{ a.ultimo_contacto|naturaltime }}{% else %}Sin datos recibidos{% endif %}</span>
+                  </div>
+                  <div class="autobus-alertas">
+                    {% if a.alertas %}
+                      <p class="autobus-alerta">{% include "tablero/_severidad.html" with severidad=a.severidad %} {{ a.alertas }} alerta{{ a.alertas|pluralize }}</p>
+                      <p class="autobus-mensaje">{{ a.alerta_principal.mensaje }}</p>
+                    {% else %}
+                      <p class="autobus-mensaje">Sin alertas activas</p>
+                    {% endif %}
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+            {% if t.restantes %}<p class="cliente-pie">y {{ t.restantes }} autob{{ t.restantes|pluralize:"ús,uses" }} más</p>{% endif %}
+          {% else %}
+            <p class="lista-vacia">Este cliente aún no tiene autobuses asignados.</p>
+          {% endif %}
+        </section>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="panel vacio">
+      <h2>Aún no hay clientes</h2>
+      <p>Ejecuta <code>python manage.py migrate</code> y <code>python manage.py inicializar</code> para cargar los clientes y autobuses de ejemplo.</p>
+    </div>
+  {% endif %}
+
+  <p class="texto-chico"><a href="{% url 'tablero:alertas' %}" class="enlace-discreto">Ver todas las alertas</a></p>
+</div>
+{% endblock %}
+
+{% block scripts %}<script src="{% static 'js/flota.js' %}"></script>{% endblock %}

@@ -7,11 +7,13 @@ from django.db import transaction
 
 from tablero.roles import ADMINISTRADOR, INGENIERIA, TECNICO, crear_roles
 from telemetria.catalogo import cargar_catalogo
+from telemetria.flota_demo import cargar_flota_demo
 from telemetria.models import Cliente, Gateway, Nodo, Vehiculo
 
 
 class Command(BaseCommand):
-    help = "Crea los roles, carga el catálogo de señales y, si no existen, el vehículo, gateway y nodo de demostración."
+    help = ("Crea los roles, carga el catálogo de señales y, si no existen, el vehículo, gateway y nodo de demostración "
+            "y los autobuses de ejemplo de los clientes.")
 
     def add_arguments(self, parser):
         parser.add_argument("--sin-dispositivos", action="store_true", help="No crear dispositivos de demostración.")
@@ -25,6 +27,9 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f"✔ Catálogo de señales: {creadas} nuevas, {actualizadas} actualizadas"))
         if not opciones["sin_dispositivos"]:
             self._dispositivos()
+            creados = cargar_flota_demo()
+            self.stdout.write(self.style.SUCCESS(f"✔ Autobuses de ejemplo de los clientes: {creados} nuevos")
+                              if creados else "• Los autobuses de ejemplo de los clientes ya existen.")
         if opciones["usuarios_demo"]:
             self._usuarios()
 

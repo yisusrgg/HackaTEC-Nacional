@@ -670,3 +670,32 @@ textarea.campo { resize: vertical; }
 @media (max-width: 600px) {
   .dos-campos { grid-template-columns: 1fr; }
 }
+
+
+/* ---------- 26. Resumen de la flota (clientes y autobuses) ---------- */
+.flota { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr)); gap: 16px; align-items: start; }
+.cliente { overflow: hidden; border-top: 3px solid var(--linea-fuerte); }
+.cliente-critico { border-top-color: var(--critico); }
+.cliente-aviso { border-top-color: var(--aviso); }
+.cliente-meta { margin-top: 2px; font-size: 13px; color: var(--gris); }
+.cliente-pie { padding: 10px 20px 14px; font-size: 13px; color: var(--gris); }
+.autobuses { list-style: none; margin: 0; padding: 0; }
+.autobus {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--linea);
+}
+.autobus:last-child { border-bottom: 0; }
+.autobus-id { display: grid; gap: 2px; min-width: 0; }
+.autobus-codigo { font-family: var(--fuente-mono); font-size: 14px; font-weight: 500; }
+.autobus-nombre { font-size: 13px; color: var(--gris); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.autobus-estado { display: grid; gap: 4px; justify-items: end; align-content: start; }
+.autobus-contacto { font-size: 12px; color: var(--gris); white-space: nowrap; }
+.autobus-alertas { grid-column: 1 / -1; display: grid; gap: 4px; }
+.autobus-alerta { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.autobus-mensaje { font-size: 13px; color: var(--gris); }
+
+@media (max-width: 600px) {
+  .autobus { grid-template-columns: 1fr; }
+  .autobus-estado { justify-items: start; }
+}

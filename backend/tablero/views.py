@@ -44,7 +44,8 @@ class ResumenView(VistaProtegida, TemplateView):
                 grupos.append({"codigo": valor, "nombre": etiqueta, "senales": lista})
         contexto.update(
             nodo=nodo,
-            nodos=Nodo.objects.select_related("gateway").order_by("gateway_id", "numero"),
+            # Solo los nodos del mismo autobús: ?nodo=<número> no distingue entre autobuses.
+            nodos=Nodo.objects.filter(gateway_id=nodo.gateway_id if nodo else None).order_by("numero"),
             grupos=grupos,
             alertas=Alerta.objects.filter(estado__in=Alerta.ACTIVAS).select_related("senal", "nodo")[:6],
             config={
@@ -69,7 +70,7 @@ class SenalView(VistaProtegida, DetailView):
         nodo = nodo_seleccionado(self.request.GET.get("nodo"))
         contexto.update(
             nodo=nodo,
-            nodos=Nodo.objects.order_by("gateway_id", "numero"),
+            nodos=Nodo.objects.filter(gateway_id=nodo.gateway_id if nodo else None).order_by("numero"),
             rangos=[(15, "15 min"), (60, "1 h"), (360, "6 h"), (1440, "24 h"), (10080, "7 días")],
             config={
                 "codigo": senal.codigo,

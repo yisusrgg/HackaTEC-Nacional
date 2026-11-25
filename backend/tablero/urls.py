@@ -1,11 +1,13 @@
 from django.urls import path
 
-from . import api, views, ordenes, analisis, historial, usuarios
+from . import api, flota, views, ordenes, analisis, historial, usuarios
 
 app_name = "tablero"
 
 urlpatterns = [
-    path("", views.ResumenView.as_view(), name="resumen"),
+    path("", flota.ResumenFlotaView.as_view(), name="resumen"),
+    # Monitoreo en vivo de un autobús (la pantalla de resumen anterior); se adaptará a varios autobuses después.
+    path("monitoreo/", views.ResumenView.as_view(), name="monitoreo"),
     path("senal/<str:codigo>/", views.SenalView.as_view(), name="senal"),
     path("alertas/", views.AlertasView.as_view(), name="alertas"),
     path("alertas/<int:pk>/atender/", views.AtenderAlertaView.as_view(), name="atender_alerta"),

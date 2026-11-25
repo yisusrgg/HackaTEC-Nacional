@@ -1,8 +1,11 @@
 {% with actual=request.resolver_match.url_name %}
 {% if perms.telemetria.ver_tablero %}
   <p class="menu-grupo">Monitoreo</p>
-    <a href="{% url 'tablero:resumen' %}" class="menu-enlace{% if actual == 'resumen' or actual == 'senal' %} activo{% endif %}"{% if actual == 'resumen' or actual == 'senal' %} aria-current="page"{% endif %}>
+    <a href="{% url 'tablero:resumen' %}" class="menu-enlace{% if actual == 'resumen' %} activo{% endif %}"{% if actual == 'resumen' %} aria-current="page"{% endif %}>
       Resumen
+    </a>
+    <a href="{% url 'tablero:monitoreo' %}" class="menu-enlace{% if actual == 'monitoreo' or actual == 'senal' %} activo{% endif %}"{% if actual == 'monitoreo' or actual == 'senal' %} aria-current="page"{% endif %}>
+      Monitoreo en vivo
     </a>
     <a href="{% url 'tablero:alertas' %}" class="menu-enlace{% if actual == 'alertas' %} activo{% endif %}"{% if actual == 'alertas' %} aria-current="page"{% endif %}>
       Alertas
