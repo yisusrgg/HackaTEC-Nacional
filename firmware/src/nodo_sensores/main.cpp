@@ -107,7 +107,8 @@ static void enviar(uint8_t mensaje, const uint8_t plano[4]) {
     tramasEnviadas++;
     fallas &= ~FALLA_CAN_TX;
   } else {
-    tramasFallidas++;  // cola llena: nadie confirma las tramas (¿gateway apagado o bus mal cableado?)
+    tramasFallidas++;  // el controlador no logra transmitir: sin transceptor, ¿falta el jumper GPIO17↔GPIO16?;
+                       // con transceptor, ¿nadie confirma las tramas (gateway apagado) o el bus está mal cableado?
     fallas |= FALLA_CAN_TX;
   }
 }
@@ -445,8 +446,9 @@ void setup() {
     Serial.println(F("[AVISO] Nodo sin clave: no transmitirá hasta provisionarlo."));
     imprimirAyuda();
   }
-  if (!canIniciar(PIN_CAN_TX, PIN_CAN_RX, 16, 4)) {
-    Serial.println(F("[ERROR] No arrancó el bus CAN: revisa el SN65HVD230 y los pines 16/17."));
+  Serial.printf("[CAN] Modo: %s\n", TEXTO_MODO_CAN);
+  if (!canIniciar(PIN_CAN_TX, PIN_CAN_RX, MODO_CAN_NODO, 16, 4)) {
+    Serial.println(F("[ERROR] No arrancó el bus CAN: revisa los pines 16/17 (y el transceptor, si lo usan)."));
   }
 
   dht.begin();

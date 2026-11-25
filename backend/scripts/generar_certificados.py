@@ -8,7 +8,7 @@ Crea en backend/certs/:
   ca.crt        certificado de la CA     → va en el firmware del gateway y en los navegadores
   servidor.key  llave privada HTTPS del servidor
   servidor.crt  certificado HTTPS del servidor (válido para localhost, 127.0.0.1 y las IP indicadas)
-y escribe firmware/include/ca_cert.h para que el gateway compruebe que habla con el servidor legítimo.
+y escribe firmware/gateway/ca_cert.h (sketch del gateway) para que compruebe que habla con el servidor legítimo.
 
 Si la IP de la laptop cambia en el evento, vuelve a correrlo con la IP nueva: reutiliza la misma CA,
 así que no hay que volver a compilar el firmware.
@@ -123,7 +123,8 @@ def main():
     parser.add_argument("--ip", action="append", default=[], help="IP de la laptop servidor en la red local (se puede repetir).")
     parser.add_argument("--dns", action="append", default=[], help="Nombre adicional del servidor (se puede repetir).")
     parser.add_argument("--salida", default=str(BASE / "certs"), help="Carpeta de salida.")
-    parser.add_argument("--header", default=str(RAIZ / "firmware" / "include" / "ca_cert.h"), help="Header para el firmware.")
+    parser.add_argument("--header", default=str(RAIZ / "firmware" / "gateway" / "ca_cert.h"),
+                        help="Header para el sketch del gateway.")
     parser.add_argument("--nueva-ca", action="store_true", help="Crear una CA nueva aunque ya exista (obliga a recompilar el gateway).")
     args = parser.parse_args()
 

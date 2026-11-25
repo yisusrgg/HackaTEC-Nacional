@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1950 1080" width="1950" height="1080" font-family="'Noto Sans','Segoe UI',Arial,sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4.4" markerHeight="4.4" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#546E7A"/>
+    </marker>
+    <marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4.4" markerHeight="4.4" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#E65100"/>
+    </marker>
+  </defs>
+  <style>
+    .col { fill: #FAFAFA; stroke: #B0BEC5; stroke-width: 3; stroke-dasharray: 12 9; }
+    .colh { font-size: 28px; font-weight: 700; fill: #546E7A; text-anchor: middle; }
+    .t { font-size: 30px; font-weight: 700; fill: #263238; text-anchor: middle; }
+    .l { font-size: 23px; fill: #455A64; text-anchor: middle; }
+    .s { font-size: 23px; fill: #455A64; }
+    .s tspan { font-weight: 700; fill: #263238; }
+    .lab { font-size: 21px; fill: #546E7A; }
+    .verde { fill: #E8F5E9; stroke: #2E7D32; stroke-width: 5; }
+    .azul { fill: #E3F2FD; stroke: #1565C0; stroke-width: 5; }
+    .naranja { fill: #FFF3E0; stroke: #E65100; stroke-width: 5; }
+    .fl { stroke: #546E7A; stroke-width: 5; fill: none; }
+  </style>
+
+  <rect width="1950" height="1080" fill="#ffffff"/>
+  <text x="36" y="60" font-size="42" font-weight="700" fill="#1A3A5C">Arquitectura de hardware y software</text>
+  <text x="36" y="100" font-size="24" fill="#607D8B">Del sensor al tablero: componente físico y programa de cada etapa</text>
+
+  <!-- ===== Columnas ===== -->
+  <rect class="col" x="30" y="130" width="570" height="860" rx="24"/>
+  <text class="colh" x="315" y="178">Adquisición · dentro del autobús</text>
+  <rect class="col" x="690" y="130" width="570" height="860" rx="24"/>
+  <text class="colh" x="975" y="178">Comunicación segura</text>
+  <rect class="col" x="1350" y="130" width="570" height="860" rx="24"/>
+  <text class="colh" x="1635" y="178">Datos y usuario · servidor propio</text>
+
+  <!-- ===== Columna 1 ===== -->
+  <rect class="verde" x="60" y="210" width="510" height="340" rx="18"/>
+  <text class="t" x="315" y="260">Sensores</text>
+  <text class="s" x="96" y="312"><tspan>DHT11</tspan> · temperatura y humedad</text>
+  <text class="s" x="96" y="346"><tspan>HW-201</tspan> · rpm del ventilador</text>
+  <text class="s" x="96" y="380"><tspan>HC-SR04</tspan> · nivel del tanque</text>
+  <text class="s" x="96" y="414"><tspan>HC-SR501</tspan> · presencia en el sanitario</text>
+  <text class="s" x="96" y="448"><tspan>Humedad de suelo</tspan> · fugas</text>
+  <text class="s" x="96" y="482"><tspan>LDR</tspan> · luz interior</text>
+  <text class="s" x="96" y="516"><tspan>Divisor resistivo</tspan> · voltaje</text>
+
+  <line class="fl" x1="315" y1="552" x2="315" y2="612" marker-end="url(#a)"/>
+  <text class="lab" x="335" y="590">GPIO · ADC</text>
+
+  <rect class="verde" x="60" y="620" width="510" height="330" rx="18"/>
+  <text class="t" x="315" y="672">ESP32 #1 · Nodo de sensores</text>
+  <text class="l" x="315" y="722">firmware Arduino (C++)</text>
+  <text class="l" x="315" y="764">lee, filtra y escala cada señal</text>
+  <text class="l" x="315" y="806">cifra (AES-128) y autentica (HMAC)</text>
+  <text class="l" x="315" y="848">contador antirrepetición en NVS</text>
+  <text class="l" x="315" y="890">envía cada 1 a 5 s por variable</text>
+
+  <!-- Nodo → CAN (diagonal) -->
+  <line class="fl" x1="572" y1="770" x2="712" y2="340" marker-end="url(#a)"/>
+  <rect x="598" y="520" width="94" height="34" rx="6" fill="#ffffff"/>
+  <text class="lab" x="645" y="545" text-anchor="middle">TWAI</text>
+
+  <!-- ===== Columna 2 ===== -->
+  <rect class="azul" x="720" y="210" width="510" height="230" rx="18"/>
+  <text class="t" x="975" y="262">Red CAN propia</text>
+  <text class="l" x="975" y="310">CAN 2.0A · 250 kbit/s</text>
+  <text class="l" x="975" y="350">tramas seguras de 8 bytes</text>
+  <text class="l" x="975" y="390">aislada del CAN del autobús</text>
+
+  <line class="fl" x1="975" y1="442" x2="975" y2="502" marker-end="url(#a)"/>
+  <text class="lab" x="995" y="480">GPIO16 (RX)</text>
+
+  <rect class="azul" x="720" y="510" width="510" height="440" rx="18"/>
+  <text class="t" x="975" y="562">ESP32 #2 · Gateway</text>
+  <text class="l" x="975" y="612">solo escucha el bus CAN</text>
+  <text class="l" x="975" y="656">agrupa tramas: 40 o cada 2 s</text>
+  <text class="l" x="975" y="700">firma cada lote (HMAC-SHA256)</text>
+  <text class="l" x="975" y="744">HTTPS con certificado propio</text>
+  <text class="l" x="975" y="788">cola en flash sin red (~10 min)</text>
+  <text class="l" x="975" y="832">hora sincronizada con el servidor</text>
+  <text class="l" x="975" y="876">Wi-Fi 2.4 GHz</text>
+
+  <!-- Gateway → Django -->
+  <line x1="1232" y1="600" x2="1372" y2="600" stroke="#E65100" stroke-width="5" marker-end="url(#ao)"/>
+  <rect x="1252" y="558" width="100" height="30" rx="6" fill="#ffffff"/>
+  <text x="1302" y="581" font-size="22" font-weight="700" fill="#E65100" text-anchor="middle">HTTPS</text>
+  <rect x="1252" y="612" width="100" height="30" rx="6" fill="#ffffff"/>
+  <text x="1302" y="634" font-size="20" fill="#E65100" text-anchor="middle">TLS</text>
+
+  <!-- ===== Columna 3 ===== -->
+  <rect class="naranja" x="1380" y="210" width="510" height="190" rx="18"/>
+  <text class="t" x="1635" y="262">MySQL 8</text>
+  <text class="l" x="1635" y="310">lecturas, alertas y bitácora</text>
+  <text class="l" x="1635" y="350">claves cifradas en reposo (Fernet)</text>
+
+  <line class="fl" x1="1635" y1="404" x2="1635" y2="464" marker-start="url(#a)" marker-end="url(#a)"/>
+  <text class="lab" x="1658" y="442">ORM de Django</text>
+
+  <rect class="naranja" x="1380" y="470" width="510" height="250" rx="18"/>
+  <text class="t" x="1635" y="522">Servidor Django + DRF</text>
+  <text class="l" x="1635" y="570">verifica la firma de cada lote</text>
+  <text class="l" x="1635" y="610">valida y descifra cada trama</text>
+  <text class="l" x="1635" y="650">rechaza repeticiones e inyecciones</text>
+  <text class="l" x="1635" y="690">alertas y bitácora con SHA-256</text>
+
+  <line class="fl" x1="1635" y1="722" x2="1635" y2="782" marker-end="url(#a)"/>
+  <text class="lab" x="1658" y="760">HTTPS · inicio de sesión</text>
+
+  <rect class="naranja" x="1380" y="790" width="510" height="160" rx="18"/>
+  <text class="t" x="1635" y="840">Tablero web</text>
+  <text class="l" x="1635" y="882">Tailwind + Chart.js</text>
+  <text class="l" x="1635" y="920">tiempo real, tendencias y alertas</text>
+
+  <!-- ===== Pie ===== -->
+  <circle cx="420" cy="1033" r="16" fill="none" stroke="#C62828" stroke-width="4"/>
+  <line x1="409" y1="1044" x2="431" y2="1022" stroke="#C62828" stroke-width="4"/>
+  <text x="450" y="1041" font-size="24" fill="#455A64"><tspan font-weight="700" fill="#C62828">Sin conexión</tspan> a la red CAN SAE J1939 del autobús · sistema independiente y de bajo voltaje (5 V)</text>
+</svg>

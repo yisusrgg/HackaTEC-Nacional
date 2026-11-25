@@ -26,7 +26,7 @@ from telemetria.models import Gateway
 
 MSG_AC_AMBIENTE, MSG_AC_VENTILADOR = 0x10, 0x11
 MSG_SAN_TANQUE, MSG_SAN_ESTADO, MSG_SAN_FUGA = 0x20, 0x21, 0x22
-MSG_LUZ_ZONAS, MSG_ALIMENTACION, MSG_ESTADO_NODO = 0x30, 0x40, 0xF0
+MSG_LUZ, MSG_ALIMENTACION, MSG_ESTADO_NODO = 0x30, 0x40, 0xF0
 TANQUE_ALTURA_MM, TANQUE_ZONA_MUERTA_MM = 300, 30
 
 
@@ -58,7 +58,6 @@ class SensoresSimulados:
         self.nivel = 85.0
         self.usos = 0
         self.ocupado = False
-        self.puerta_antes = True
 
     def mensajes(self):
         t = time.monotonic() - self.inicio
@@ -78,15 +77,15 @@ class SensoresSimulados:
             self.nivel = self.nivel - 0.15 if self.nivel > 15 else 90.0  # se vacía poco a poco y se rellena
         distancia = TANQUE_ZONA_MUERTA_MM + (100 - self.nivel) / 100 * (TANQUE_ALTURA_MM - TANQUE_ZONA_MUERTA_MM)
 
-        fase = t % 60  # ciclo de 1 min: puerta abierta 15 s, luego cerrada con alguien dentro
-        puerta = fase < 15
-        presencia = 20 <= fase < 50
-        if presencia and not puerta:
+        # Igual que el firmware: el PIR detecta a alguien de los 10 a los 35 s de cada minuto; el sanitario sigue
+        # ocupado hasta 15 s sin presencia y, al liberarse, cuenta un uso.
+        fase = t % 60
+        presencia = 10 <= fase < 35
+        if presencia:
             self.ocupado = True
-        if puerta and not self.puerta_antes and self.ocupado:
+        elif self.ocupado and fase >= 50:
             self.usos += 1
             self.ocupado = False
-        self.puerta_antes = puerta
 
         fuga = self.falla == "fuga"
         humedad_piso = 72 + ruido(-2, 2) if fuga else 4 + ruido(-1, 1)
@@ -96,9 +95,9 @@ class SensoresSimulados:
             (MSG_AC_AMBIENTE, ambiente),
             (MSG_AC_VENTILADOR, _u16(rpm) + b"\x00\x00"),
             (MSG_SAN_TANQUE, _u16(distancia) + _u16(self.nivel * 10)),
-            (MSG_SAN_ESTADO, _u8(puerta) + _u8(presencia) + _u16(self.usos)),
+            (MSG_SAN_ESTADO, _u8(self.ocupado) + _u8(presencia) + _u16(self.usos)),
             (MSG_SAN_FUGA, _u16(humedad_piso * 10) + _u8(fuga) + b"\x00"),
-            (MSG_LUZ_ZONAS, _u8(82 + ruido(-3, 3)) + _u8(78 + ruido(-3, 3)) + _u8(1) + b"\x00"),
+            (MSG_LUZ, _u8(80 + ruido(-3, 3)) + b"\x00\x00\x00"),
             (MSG_ALIMENTACION, _u16(5020 + ruido(-30, 30)) + b"\x00\x00"),
             (MSG_ESTADO_NODO, _u16(t // 60) + _u16(fallas)),
         ]

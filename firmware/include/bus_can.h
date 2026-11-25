@@ -1,11 +1,25 @@
 #pragma once
 #include <driver/twai.h>
 
-// Bus CAN propio a 250 kbit/s con tramas estándar de 11 bits (controlador TWAI integrado del ESP32 +
-// transceptor SN65HVD230). Este bus NO se conecta al CAN del autobús.
+// Bus CAN propio a 250 kbit/s con tramas estándar de 11 bits (controlador TWAI integrado del ESP32).
+// Este bus NO se conecta al CAN del autobús.
+//
+// Dos formas de cablearlo; se elige con -DSIN_TRANSCEPTOR=1 en platformio.ini (ver docs/01 y el diagrama del enlace):
+//  • SIN transceptor (prototipo): el nodo transmite en modo NO_ACK con sus pines TX y RX unidos por un jumper, y un
+//    cable lleva esa señal al RX del gateway, que solo escucha (LISTEN_ONLY). Enlace de un solo sentido a 3.3 V.
+//  • CON transceptores SN65HVD230 (producción): ambos en modo NORMAL, par trenzado CANH/CANL con 120 Ω en los extremos.
+#ifdef SIN_TRANSCEPTOR
+constexpr twai_mode_t MODO_CAN_NODO = TWAI_MODE_NO_ACK;
+constexpr twai_mode_t MODO_CAN_GATEWAY = TWAI_MODE_LISTEN_ONLY;
+constexpr const char *TEXTO_MODO_CAN = "SIN transceptor (nodo NO_ACK, gateway LISTEN_ONLY)";
+#else
+constexpr twai_mode_t MODO_CAN_NODO = TWAI_MODE_NORMAL;
+constexpr twai_mode_t MODO_CAN_GATEWAY = TWAI_MODE_NORMAL;
+constexpr const char *TEXTO_MODO_CAN = "CON transceptor SN65HVD230 (modo NORMAL)";
+#endif
 
-inline bool canIniciar(int pinTx, int pinRx, uint32_t colaTx, uint32_t colaRx) {
-  twai_general_config_t general = TWAI_GENERAL_CONFIG_DEFAULT((gpio_num_t)pinTx, (gpio_num_t)pinRx, TWAI_MODE_NORMAL);
+inline bool canIniciar(int pinTx, int pinRx, twai_mode_t modo, uint32_t colaTx, uint32_t colaRx) {
+  twai_general_config_t general = TWAI_GENERAL_CONFIG_DEFAULT((gpio_num_t)pinTx, (gpio_num_t)pinRx, modo);
   general.tx_queue_len = colaTx;
   general.rx_queue_len = colaRx;
   twai_timing_config_t tiempos = TWAI_TIMING_CONFIG_250KBITS();

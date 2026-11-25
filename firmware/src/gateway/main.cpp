@@ -515,8 +515,9 @@ void setup() {
   }
 
   colaRx = xQueueCreate(128, sizeof(TramaRx));
-  if (!canIniciar(PIN_CAN_TX, PIN_CAN_RX, 4, 64)) {
-    Serial.println(F("[ERROR] No arrancó el bus CAN: revisa el SN65HVD230 y los pines 16/17."));
+  Serial.printf("[CAN] Modo: %s\n", TEXTO_MODO_CAN);
+  if (!canIniciar(PIN_CAN_TX, PIN_CAN_RX, MODO_CAN_GATEWAY, 4, 64)) {
+    Serial.println(F("[ERROR] No arrancó el bus CAN: revisa los pines 16/17 (y el transceptor, si lo usan)."));
   }
   xTaskCreatePinnedToCore(tareaCan, "can_rx", 4096, nullptr, 5, nullptr, 1);
 

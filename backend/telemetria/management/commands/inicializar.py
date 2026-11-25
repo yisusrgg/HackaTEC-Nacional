@@ -23,8 +23,9 @@ class Command(BaseCommand):
     def handle(self, *args, **opciones):
         crear_roles()
         self.stdout.write(self.style.SUCCESS("✔ Roles: Administrador, Ingeniería, Técnico"))
-        creadas, actualizadas = cargar_catalogo()
-        self.stdout.write(self.style.SUCCESS(f"✔ Catálogo de señales: {creadas} nuevas, {actualizadas} actualizadas"))
+        creadas, actualizadas, retiradas = cargar_catalogo()
+        self.stdout.write(self.style.SUCCESS(
+            f"✔ Catálogo de señales: {creadas} nuevas, {actualizadas} actualizadas, {retiradas} retiradas"))
         if not opciones["sin_dispositivos"]:
             self._dispositivos()
             creados = cargar_flota_demo()

@@ -21,13 +21,17 @@ la clave del nodo; esa es la protección **extremo a extremo** de nodo a base de
 
 ## Conexiones
 
-| SN65HVD230 | ESP32 #2 |
+**Sin transceptor (configuración actual, `-DSIN_TRANSCEPTOR=1`).** Solo dos cables; el esquema completo está en
+[diagrama-enlace-gateway.png](diagrama-enlace-gateway.png):
+
+| ESP32 #2 (gateway) | Se conecta a |
 |---|---|
-| 3V3 | 3V3 |
-| GND | GND (también unida a la GND del nodo) |
-| CTX | GPIO17 |
-| CRX | GPIO16 |
-| CANH / CANL | Al bus: a CANH / CANL del transceptor del nodo |
+| GPIO16 (RX) | GPIO17 del nodo, con una resistencia de 330 Ω en serie si hay |
+| GND | GND del nodo |
+| GPIO17 (TX) | **Nada.** El gateway solo escucha (`LISTEN_ONLY`) |
+
+**Con transceptor SN65HVD230** (si los consiguen; se quita la línea `-DSIN_TRANSCEPTOR=1` y se vuelve a subir el
+firmware): 3V3 → 3V3, GND → GND, CTX → GPIO17, CRX → GPIO16, y CANH/CANL al transceptor del nodo.
 
 Aliméntalo por USB desde la laptop o con un cargador de celular. El LED integrado (GPIO2) indica el estado.
 
@@ -110,7 +114,9 @@ Otros comandos: `estado` (diagnóstico completo), `reiniciar` y `borrar SI` (bor
   revocable desde el tablero.
 - **Cifrado en tránsito:** TLS. El gateway solo acepta un servidor con un certificado firmado por la CA propia.
 - **Anti-repetición:** número de lote único más la huella del contenido, y además el contador de cada trama.
-- **Segmentación:** el gateway nunca se conecta al CAN del autobús. El nodo de sensores no tiene radio.
+- **Segmentación:** el gateway nunca se conecta al CAN del autobús. El nodo de sensores no tiene radio. Sin
+  transceptor, además, el enlace es físicamente de un solo sentido: el GPIO17 del gateway no está conectado, así que no
+  tiene por dónde mandarle nada al nodo.
 - **Gestión de credenciales:** Wi-Fi y clave en NVS, provisionadas por el puerto serie. La rotación de clave invalida
   la anterior.
 

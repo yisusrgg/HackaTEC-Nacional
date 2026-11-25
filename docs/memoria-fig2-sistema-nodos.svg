@@ -1,0 +1,160 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1110" width="2000" height="1110" font-family="'Noto Sans','Segoe UI',Arial,sans-serif">
+  <defs>
+    <marker id="as" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4.2" markerHeight="4.2" orient="auto">
+      <path d="M0 0L10 5L0 10z" fill="#546E7A"/>
+    </marker>
+    <marker id="ai" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4.2" markerHeight="4.2" orient="auto">
+      <path d="M0 0L10 5L0 10z" fill="#3949AB"/>
+    </marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4.2" markerHeight="4.2" orient="auto">
+      <path d="M0 0L10 5L0 10z" fill="#2E7D32"/>
+    </marker>
+  </defs>
+  <style>
+    .h { font-size: 31px; font-weight: 700; fill: #263238; }
+    .sub { font-size: 22px; fill: #607D8B; }
+    .li { font-size: 24px; fill: #37474F; }
+    .gh { font-size: 27px; font-weight: 700; fill: #263238; }
+    .tag { font-size: 20px; fill: #607D8B; }
+    .chip { font-size: 23px; fill: #37474F; }
+    .chip tspan { font-weight: 700; fill: #263238; }
+  </style>
+
+  <rect width="2000" height="1110" fill="#ffffff"/>
+  <text x="60" y="64" font-size="42" font-weight="700" fill="#1A3A5C">Sistema de nodos ESP32 y sensores</text>
+  <text x="60" y="104" font-size="25" fill="#607D8B">Qué mide cada sensor y cómo viaja el dato hasta el tablero</text>
+
+  <!-- ===== Zonas ===== -->
+  <rect x="30" y="140" width="1450" height="900" rx="26" fill="#FAFBFC" stroke="#90A4AE" stroke-width="3" stroke-dasharray="12 9"/>
+  <text x="58" y="182" font-size="24" font-weight="700" fill="#455A64">DENTRO DEL AUTOBÚS <tspan font-weight="400">· red propia, sin conexión al CAN del vehículo</tspan></text>
+  <rect x="1510" y="140" width="460" height="900" rx="26" fill="#F6FBF4" stroke="#81C784" stroke-width="3" stroke-dasharray="12 9"/>
+  <text x="1538" y="182" font-size="24" font-weight="700" fill="#2E7D32">FUERA DEL VEHÍCULO</text>
+  <text x="1538" y="210" font-size="22" fill="#2E7D32">servidor propio</text>
+
+  <!-- ===== Sensores ===== -->
+  <!-- Aire acondicionado -->
+  <rect x="60" y="215" width="500" height="190" rx="16" fill="#E0F2F1" stroke="#00897B" stroke-width="4"/>
+  <text x="82" y="252" class="gh">Aire acondicionado</text>
+  <text x="538" y="252" class="tag" text-anchor="end">variable 1</text>
+  <rect x="74" y="267" width="472" height="58" rx="10" fill="#fff" stroke="#00897B" stroke-width="2.5"/>
+  <text x="94" y="304" class="chip"><tspan>DHT11</tspan> · temperatura y humedad</text>
+  <rect x="74" y="333" width="472" height="58" rx="10" fill="#fff" stroke="#00897B" stroke-width="2.5"/>
+  <text x="94" y="370" class="chip"><tspan>HW-201</tspan> · RPM del ventilador</text>
+
+  <!-- Sanitario -->
+  <rect x="60" y="425" width="500" height="256" rx="16" fill="#E3F2FD" stroke="#1565C0" stroke-width="4"/>
+  <text x="82" y="462" class="gh">Sanitario</text>
+  <text x="538" y="462" class="tag" text-anchor="end">variable 2</text>
+  <rect x="74" y="477" width="472" height="58" rx="10" fill="#fff" stroke="#1565C0" stroke-width="2.5"/>
+  <text x="94" y="514" class="chip"><tspan>HC-SR04</tspan> · nivel del tanque</text>
+  <rect x="74" y="543" width="472" height="58" rx="10" fill="#fff" stroke="#1565C0" stroke-width="2.5"/>
+  <text x="94" y="580" class="chip"><tspan>HC-SR501</tspan> · presencia (PIR)</text>
+  <rect x="74" y="609" width="472" height="58" rx="10" fill="#fff" stroke="#1565C0" stroke-width="2.5"/>
+  <text x="94" y="646" class="chip"><tspan>Humedad de suelo</tspan> · fugas</text>
+
+  <!-- Iluminación -->
+  <rect x="60" y="701" width="500" height="124" rx="16" fill="#FFF8E1" stroke="#F9A825" stroke-width="4"/>
+  <text x="82" y="738" class="gh">Iluminación interior</text>
+  <text x="538" y="738" class="tag" text-anchor="end">variable 3</text>
+  <rect x="74" y="753" width="472" height="58" rx="10" fill="#fff" stroke="#F9A825" stroke-width="2.5"/>
+  <text x="94" y="790" class="chip"><tspan>LDR</tspan> · luz interior de la cabina</text>
+
+  <!-- Eléctrico -->
+  <rect x="60" y="845" width="500" height="124" rx="16" fill="#F3E5F5" stroke="#7B1FA2" stroke-width="4"/>
+  <text x="82" y="882" class="gh">Equipos eléctricos</text>
+  <text x="538" y="882" class="tag" text-anchor="end">adicional</text>
+  <rect x="74" y="897" width="472" height="58" rx="10" fill="#fff" stroke="#7B1FA2" stroke-width="2.5"/>
+  <text x="94" y="934" class="chip"><tspan>Divisor</tspan> · voltaje de entrada</text>
+
+  <!-- cables de los sensores al nodo -->
+  <g stroke="#546E7A" stroke-width="4" fill="none" stroke-linecap="round">
+    <line x1="560" y1="310" x2="605" y2="310"/>
+    <line x1="560" y1="553" x2="605" y2="553"/>
+    <line x1="560" y1="763" x2="605" y2="763"/>
+    <line x1="560" y1="907" x2="605" y2="907"/>
+    <line x1="605" y1="310" x2="605" y2="907"/>
+  </g>
+  <line x1="605" y1="530" x2="646" y2="530" stroke="#546E7A" stroke-width="6" marker-end="url(#as)"/>
+
+  <!-- ===== Red CAN del autobús (no se conecta) ===== -->
+  <rect x="650" y="222" width="800" height="76" rx="14" fill="#F3F3F3" stroke="#9E9E9E" stroke-width="3" stroke-dasharray="10 8"/>
+  <circle cx="696" cy="260" r="19" fill="#C62828"/>
+  <path d="M688 252 L704 268 M704 252 L688 268" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+  <text x="1090" y="254" font-size="25" font-weight="700" fill="#616161" text-anchor="middle">Red CAN del autobús</text>
+  <text x="1090" y="284" font-size="22" fill="#757575" text-anchor="middle">no se conecta: sin interferencia</text>
+
+  <!-- ===== Nodo ESP32 #1 ===== -->
+  <rect x="650" y="330" width="320" height="400" rx="20" fill="#E8EAF6" stroke="#3949AB" stroke-width="5"/>
+  <text x="810" y="382" class="h" text-anchor="middle">Nodo de sensores</text>
+  <text x="810" y="414" class="sub" text-anchor="middle">ESP32 #1</text>
+  <g class="li">
+    <text x="676" y="466">•</text><text x="698" y="466">Adquisición local</text>
+    <text x="676" y="506">•</text><text x="698" y="506">Cifra y autentica</text>
+    <text x="698" y="540">cada medición</text>
+    <text x="676" y="580">•</text><text x="698" y="580">Contador anti-</text>
+    <text x="698" y="614">repetición</text>
+    <text x="676" y="654">•</text><text x="698" y="654">Sin Wi-Fi ni</text>
+    <text x="698" y="688">Bluetooth</text>
+  </g>
+
+  <!-- ===== Enlace CAN ===== -->
+  <line x1="974" y1="530" x2="1146" y2="530" stroke="#3949AB" stroke-width="7" marker-end="url(#ai)"/>
+  <text x="1060" y="496" font-size="25" font-weight="700" fill="#3949AB" text-anchor="middle">CAN propio</text>
+  <text x="1060" y="574" font-size="22" fill="#3949AB" text-anchor="middle">250 kbit/s</text>
+
+  <!-- ===== Gateway ESP32 #2 ===== -->
+  <rect x="1150" y="340" width="300" height="380" rx="20" fill="#E8EAF6" stroke="#3949AB" stroke-width="5"/>
+  <text x="1300" y="392" class="h" text-anchor="middle">Gateway</text>
+  <text x="1300" y="424" class="sub" text-anchor="middle">ESP32 #2</text>
+  <g class="li">
+    <text x="1172" y="474">•</text><text x="1194" y="474">Recibe tramas CAN</text>
+    <text x="1172" y="514">•</text><text x="1194" y="514">Agrupa en lotes y</text>
+    <text x="1194" y="548">los firma (HMAC)</text>
+    <text x="1172" y="588">•</text><text x="1194" y="588">Sin red: guarda y</text>
+    <text x="1194" y="622">reenvía después</text>
+    <text x="1172" y="662">•</text><text x="1194" y="662">Conexión Wi-Fi</text>
+  </g>
+
+  <!-- ===== HTTPS ===== -->
+  <line x1="1454" y1="530" x2="1536" y2="530" stroke="#2E7D32" stroke-width="7" marker-end="url(#ag)"/>
+  <rect x="1458" y="470" width="74" height="34" rx="6" fill="#fff"/>
+  <text x="1495" y="496" font-size="24" font-weight="700" fill="#2E7D32" text-anchor="middle">HTTPS</text>
+
+  <!-- ===== Servidor ===== -->
+  <rect x="1540" y="360" width="400" height="340" rx="20" fill="#E8F5E9" stroke="#2E7D32" stroke-width="5"/>
+  <text x="1740" y="412" class="h" text-anchor="middle">Servidor propio</text>
+  <text x="1740" y="444" class="sub" text-anchor="middle">Django + MySQL</text>
+  <g class="li">
+    <text x="1566" y="496">•</text><text x="1588" y="496">Verifica firma y MAC</text>
+    <text x="1566" y="536">•</text><text x="1588" y="536">Rechaza tramas</text>
+    <text x="1588" y="570">repetidas o alteradas</text>
+    <text x="1566" y="610">•</text><text x="1588" y="610">Guarda y genera alertas</text>
+    <text x="1566" y="650">•</text><text x="1588" y="650">Bitácora de seguridad</text>
+  </g>
+
+  <line x1="1740" y1="706" x2="1740" y2="764" stroke="#2E7D32" stroke-width="7" marker-end="url(#ag)"/>
+
+  <!-- ===== Tablero ===== -->
+  <rect x="1540" y="770" width="400" height="230" rx="20" fill="#E8F5E9" stroke="#2E7D32" stroke-width="5"/>
+  <text x="1740" y="822" class="h" text-anchor="middle">Tablero web</text>
+  <g class="li">
+    <text x="1566" y="876">•</text><text x="1588" y="876">Datos en tiempo real</text>
+    <text x="1566" y="916">•</text><text x="1588" y="916">Tendencias y alertas</text>
+    <text x="1566" y="956">•</text><text x="1588" y="956">Acceso por roles</text>
+  </g>
+
+  <!-- ===== Trama CAN ===== -->
+  <text x="1050" y="838" font-size="25" font-weight="700" fill="#455A64" text-anchor="middle">Trama CAN de 8 bytes</text>
+  <rect x="650" y="856" width="400" height="84" rx="10" fill="#E8EAF6" stroke="#3949AB" stroke-width="3"/>
+  <text x="850" y="890" font-size="25" font-weight="700" fill="#263238" text-anchor="middle">Datos cifrados</text>
+  <text x="850" y="921" font-size="21" fill="#546E7A" text-anchor="middle">4 bytes · AES-128</text>
+  <rect x="1050" y="856" width="200" height="84" rx="10" fill="#FFF8E1" stroke="#F9A825" stroke-width="3"/>
+  <text x="1150" y="890" font-size="25" font-weight="700" fill="#263238" text-anchor="middle">Contador</text>
+  <text x="1150" y="921" font-size="21" fill="#546E7A" text-anchor="middle">2 bytes</text>
+  <rect x="1250" y="856" width="200" height="84" rx="10" fill="#E8F5E9" stroke="#2E7D32" stroke-width="3"/>
+  <text x="1350" y="890" font-size="25" font-weight="700" fill="#263238" text-anchor="middle">MAC</text>
+  <text x="1350" y="921" font-size="21" fill="#546E7A" text-anchor="middle">2 bytes · HMAC</text>
+  <text x="1050" y="990" font-size="22" font-style="italic" fill="#607D8B" text-anchor="middle">Cada trama se cifra, se numera y se autentica</text>
+
+  <text x="1000" y="1086" font-size="24" font-style="italic" fill="#607D8B" text-anchor="middle">Solo el gateway sale del vehículo; el servidor verifica cada trama de extremo a extremo.</text>
+</svg>

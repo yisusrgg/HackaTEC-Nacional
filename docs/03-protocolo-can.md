@@ -6,7 +6,12 @@ Es el "DBC" del sistema. Está implementado igual en `firmware/lib/protocolo/` (
 ## Capa física
 
 - CAN 2.0A, identificadores de 11 bits, **250 kbit/s**, 8 bytes por trama.
-- Controlador TWAI integrado del ESP32 más un transceptor SN65HVD230.
+- Controlador TWAI integrado del ESP32. Hay dos formas de cablearlo, y se elige en `firmware/platformio.ini`:
+  - **Sin transceptor** (`-DSIN_TRANSCEPTOR=1`, el prototipo actual): el nodo en modo `NO_ACK` con TX y RX unidos por
+    un jumper, un cable de su GPIO17 al GPIO16 del gateway y el gateway en `LISTEN_ONLY`. Las tramas son CAN reales,
+    pero la capa eléctrica es de 3.3 V a un solo hilo y en un solo sentido, no el par diferencial CANH/CANL de la
+    norma ISO 11898-2.
+  - **Con transceptores SN65HVD230** (producción): ambos nodos en modo normal con par trenzado y 120 Ω en los extremos.
 - Bus propio, **sin conexión eléctrica al CAN del autobús**.
 - Carga del bus: unas 5 tramas/s × ~130 bits ≈ **0.3 %** de 250 kbit/s.
 
@@ -19,15 +24,18 @@ Es el "DBC" del sistema. Está implementado igual en `firmware/lib/protocolo/` (
 | `0x10` AC_AMBIENTE | `0x110` | [0-1] temperatura int16 ×0.1 °C · [2-3] humedad uint16 ×0.1 %HR | 2 s |
 | `0x11` AC_VENTILADOR | `0x111` | [0-1] RPM uint16 | 1 s |
 | `0x20` SAN_TANQUE | `0x120` | [0-1] distancia uint16 mm · [2-3] nivel uint16 ×0.1 % | 2 s |
-| `0x21` SAN_ESTADO | `0x121` | [0] puerta abierta 0/1 · [1] presencia 0/1 · [2-3] usos uint16 | 1 s o al cambiar |
+| `0x21` SAN_ESTADO | `0x121` | [0] ocupado 0/1 · [1] presencia 0/1 · [2-3] usos uint16 | 1 s o al cambiar |
 | `0x22` SAN_FUGA | `0x122` | [0-1] humedad del piso uint16 ×0.1 % · [2] fuga 0/1 | 5 s |
-| `0x30` LUZ_ZONAS | `0x130` | [0] zona 1 % · [1] zona 2 % · [2] zona 3 encendida 0/1 | 1 s |
+| `0x30` LUZ | `0x130` | [0] luz interior % (módulo LDR analógico) · [1-3] en 0 | 1 s |
 | `0x40` ALIMENTACION | `0x140` | [0-1] voltaje uint16 mV | 5 s |
 | `0xF0` ESTADO_NODO | `0x1F0` | [0-1] minutos encendido · [2-3] bits de fallas | 5 s |
 
 - **"Sin dato".** Cuando un sensor no responde, el nodo manda `0x7FFF` (int16), `0xFFFF` (uint16) o `0xFF` (byte).
   El servidor lo guarda con calidad `SIN_DATO` y abre una alerta de falla de sensor.
-- **Bits de fallas:** 0 = DHT11 · 1 = HC-SR04 · 2 = VL53L0X · 3 = PIR calentando · 4 = error al transmitir por CAN.
+- **Ocupado y usos:** el sanitario pasa a ocupado cuando el PIR detecta presencia y se libera tras 15 s sin presencia
+  (`SANITARIO_SALIDA_MS`); cada vez que se libera cuenta 1 uso.
+- **Bits de fallas:** 0 = DHT11 · 1 = HC-SR04 · 2 = libre (era el VL53L0X) · 3 = PIR calentando · 4 = error al
+  transmitir por CAN.
 - **Escala y unidades** de cada señal: tabla *Señales* del admin de Django, cargada desde `backend/telemetria/catalogo.py`.
 
 ## Formato seguro de la trama

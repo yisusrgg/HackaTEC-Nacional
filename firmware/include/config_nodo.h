@@ -8,8 +8,8 @@
 #define DEPURACION 1              // 1 = imprime las lecturas en el monitor serie
 
 // --- Pines ---
-#define PIN_CAN_TX 17      // → CTX del SN65HVD230
-#define PIN_CAN_RX 16      // ← CRX del SN65HVD230
+#define PIN_CAN_TX 17      // sin transceptor: jumper a GPIO16 y cable al GPIO16 del gateway · con transceptor: → CTX
+#define PIN_CAN_RX 16      // sin transceptor: unido a GPIO17 por el jumper · con transceptor: ← CRX
 #define PIN_DHT 4          // DHT11 DATA
 #define PIN_RPM 27         // HW-201 OUT (tacómetro óptico)
 #define PIN_US_TRIG 26     // HC-SR04 TRIG

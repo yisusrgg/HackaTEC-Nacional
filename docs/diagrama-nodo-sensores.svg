@@ -9,9 +9,9 @@
     .pin { font-size: 10.5px; font-weight: 600; fill: #e2e8f0; font-family: ui-monospace, Consolas, monospace; }
     .gris { font-size: 10.5px; fill: #94a3b8; }
     .rojo { font-size: 10.5px; font-weight: 700; fill: #dc2626; }
-    .cable { fill: none; stroke-width: 2.6; stroke-linecap: round; }
+    .cable { fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
     .ac { stroke: #2563eb; } .san { stroke: #0d9488; } .luz { stroke: #db2777; } .elec { stroke: #7c3aed; }
-    .datos { stroke: #475569; } .canh { stroke: #ca8a04; } .canl { stroke: #16a34a; }
+    .datos { stroke: #475569; }
     .v5 { stroke: #dc2626; } .v33 { stroke: #ea580c; } .gnd { stroke: #111827; }
     .res { fill: #ffffff; stroke: #334155; stroke-width: 1.4; }
     .esq { fill: none; stroke: #334155; stroke-width: 1.6; }
@@ -35,12 +35,10 @@
   <line class="cable san" x1="960" y1="96" x2="984" y2="96"/><text class="s" x="990" y="100">Sanitario</text>
   <line class="cable luz" x1="1080" y1="96" x2="1104" y2="96"/><text class="s" x="1110" y="100">Iluminación</text>
   <line class="cable elec" x1="1210" y1="96" x2="1234" y2="96"/><text class="s" x="1240" y="100">Eléctrico</text>
-  <line class="cable datos" x1="1320" y1="96" x2="1344" y2="96"/><text class="s" x="1350" y="100">Señal TX/RX del CAN</text>
+  <line class="cable datos" x1="1320" y1="96" x2="1344" y2="96"/><text class="s" x="1350" y="100">Enlace CAN al gateway</text>
   <line class="cable v5" x1="820" y1="122" x2="844" y2="122"/><text class="s" x="850" y="126">5 V</text>
   <line class="cable v33" x1="900" y1="122" x2="924" y2="122"/><text class="s" x="930" y="126">3.3 V</text>
   <line class="cable gnd" x1="990" y1="122" x2="1014" y2="122"/><text class="s" x="1020" y="126">GND</text>
-  <line class="cable canh" x1="1080" y1="122" x2="1104" y2="122"/><text class="s" x="1110" y="126">CAN H</text>
-  <line class="cable canl" x1="1170" y1="122" x2="1194" y2="122"/><text class="s" x="1200" y="126">CAN L</text>
 
   <!-- Cables del lado izquierdo -->
   <line class="cable luz" x1="390" y1="264" x2="600" y2="264"/>
@@ -52,12 +50,12 @@
   <line class="cable san" x1="390" y1="502" x2="600" y2="502"/>
   <line class="cable ac" x1="390" y1="536" x2="600" y2="536"/>
   <line class="cable san" x1="390" y1="570" x2="600" y2="570"/>
-  <line class="cable luz" x1="390" y1="638" x2="600" y2="638"/>
   <line class="cable gnd" x1="430" y1="672" x2="600" y2="672"/>
   <line class="cable v5" x1="430" y1="706" x2="600" y2="706"/>
 
   <!-- Componentes en línea -->
   <text class="s" x="495" y="257" text-anchor="middle">+ 10 kΩ del pin a GND</text>
+  <text class="s" x="495" y="291" text-anchor="middle">+ 100 nF del pin a GND</text>
   <rect class="res" x="440" y="326" width="40" height="12" rx="2"/>
   <text class="s" x="460" y="321" text-anchor="middle">100 kΩ</text>
   <text class="s" x="512" y="325">33 kΩ a GND</text>
@@ -68,13 +66,16 @@
   <!-- Cables del lado derecho -->
   <line class="cable san" x1="900" y1="264" x2="1060" y2="264"/>
   <line class="cable san" x1="900" y1="366" x2="1060" y2="366"/>
-  <line class="cable datos" x1="900" y1="502" x2="1060" y2="502"/>
-  <line class="cable datos" x1="900" y1="536" x2="1060" y2="536"/>
   <line class="cable ac" x1="900" y1="570" x2="1060" y2="570"/>
   <line class="cable gnd" x1="900" y1="672" x2="1060" y2="672"/>
   <line class="cable v33" x1="900" y1="706" x2="1060" y2="706"/>
-  <line class="cable canh" x1="1360" y1="502" x2="1400" y2="502"/>
-  <line class="cable canl" x1="1360" y1="536" x2="1400" y2="536"/>
+
+  <!-- Enlace CAN sin transceptor: jumper GPIO17↔GPIO16 y cable al gateway -->
+  <path class="cable datos" d="M900,502 H1000 V536 H900"/>
+  <line class="cable datos" x1="1000" y1="519" x2="1060" y2="519"/>
+  <circle class="punto" cx="1000" cy="502" r="4"/><circle class="punto" cx="1000" cy="519" r="4"/><circle class="punto" cx="1000" cy="536" r="4"/>
+  <text class="s" x="950" y="523" text-anchor="middle">jumper 17 ↔ 16</text>
+  <line class="cable datos" x1="1360" y1="519" x2="1400" y2="519"/>
 
   <!-- ESP32 -->
   <rect x="600" y="150" width="300" height="600" rx="14" fill="#0f172a"/>
@@ -131,8 +132,9 @@
 
   <!-- Notas junto a los pines sin cable -->
   <text class="gris" x="588" y="234" text-anchor="end">reset</text>
-  <text class="gris" x="588" y="438" text-anchor="end">libre</text>
+  <text class="gris" x="588" y="438" text-anchor="end">reservado: barrera láser (KY-008 + LDR digital) · aún sin firmware</text>
   <text class="rojo" x="588" y="608" text-anchor="end">NO USAR · pin de arranque</text>
+  <text class="gris" x="588" y="642" text-anchor="end">libre (módulo LDR digital opcional)</text>
   <text class="t" x="420" y="676" text-anchor="end">GND → tierra de todos los sensores</text>
   <text class="t" x="420" y="710" text-anchor="end">5 V → VCC del HC-SR04 y del PIR</text>
   <text class="gris" x="912" y="234">libre</text>
@@ -144,15 +146,15 @@
   <text class="gris" x="912" y="608">LED integrado (estado)</text>
   <text class="gris" x="912" y="642">libre</text>
   <text class="t" x="1070" y="676">GND → sensores y GND del gateway</text>
-  <text class="t" x="1070" y="710">3.3 V → DHT11, HW-201, VL53L0X, LDR, SN65HVD230</text>
+  <text class="t" x="1070" y="710">3.3 V → DHT11, HW-201, VL53L0X y LDR</text>
 
   <!-- Sensores del lado izquierdo -->
   <rect class="caja" x="60" y="250" width="330" height="28" rx="6"/>
-  <text class="t" x="74" y="268">Fotorresistencia (LDR) · luz zona 1</text>
+  <text class="t" x="74" y="268">LDR suelta · luz zona 1 (opcional)</text>
   <rect class="b33" x="330" y="255" width="50" height="18" rx="9"/><text class="tb33" x="355" y="268" text-anchor="middle">3.3 V</text>
 
   <rect class="caja" x="60" y="284" width="330" height="28" rx="6"/>
-  <text class="t" x="74" y="302">Módulo LDR analógico (AO) · zona 2</text>
+  <text class="t" x="74" y="302">LDR analógico (AO) · luz de cabina</text>
   <rect class="b33" x="330" y="289" width="50" height="18" rx="9"/><text class="tb33" x="355" y="302" text-anchor="middle">3.3 V</text>
 
   <rect class="caja" x="60" y="318" width="330" height="28" rx="6"/>
@@ -179,11 +181,7 @@
   <text class="t" x="74" y="574">PIR HC-SR501 · presencia</text>
   <rect class="b5" x="330" y="561" width="50" height="18" rx="9"/><text class="tb5" x="355" y="574" text-anchor="middle">5 V</text>
 
-  <rect class="caja" x="60" y="624" width="330" height="28" rx="6"/>
-  <text class="t" x="74" y="642">Módulo LDR digital (DO) · zona 3</text>
-  <rect class="b33" x="330" y="629" width="50" height="18" rx="9"/><text class="tb33" x="355" y="642" text-anchor="middle">3.3 V</text>
-
-  <!-- Sensores y transceptor del lado derecho -->
+  <!-- Sensores y enlace del lado derecho -->
   <rect class="caja" x="1060" y="250" width="300" height="130" rx="6"/>
   <text class="h3" x="1210" y="300" text-anchor="middle">Láser ToF VL53L0X</text>
   <text class="s" x="1210" y="322" text-anchor="middle">Puerta del sanitario (abierta / cerrada)</text>
@@ -192,22 +190,18 @@
   <text class="p" x="1070" y="370">SDA</text>
 
   <rect class="caja" x="1060" y="488" width="300" height="62" rx="6"/>
-  <text class="t" x="1210" y="513" text-anchor="middle">Transceptor CAN SN65HVD230</text>
-  <text class="s" x="1210" y="533" text-anchor="middle">3.3 V · resistencia de 120 Ω</text>
-  <text class="p" x="1070" y="506">CTX</text>
-  <text class="p" x="1070" y="540">CRX</text>
-  <text class="p" x="1350" y="506" text-anchor="end">CANH</text>
-  <text class="p" x="1350" y="540" text-anchor="end">CANL</text>
+  <text class="t" x="1210" y="513" text-anchor="middle">Cable al ESP32 #2 (gateway)</text>
+  <text class="s" x="1210" y="533" text-anchor="middle">→ GPIO16 del gateway · 330 Ω en serie (opcional)</text>
 
   <rect class="caja" x="1060" y="556" width="300" height="28" rx="6"/>
   <text class="t" x="1074" y="574">DHT11 · temp. y humedad del A/C</text>
   <rect class="b33" x="1300" y="561" width="50" height="18" rx="9"/><text class="tb33" x="1325" y="574" text-anchor="middle">3.3 V</text>
 
   <rect x="1400" y="470" width="140" height="98" rx="8" fill="#ecfdf5" stroke="#16a34a" stroke-width="1.4"/>
-  <text class="h3" x="1470" y="494" text-anchor="middle">Bus CAN propio</text>
-  <text class="s" x="1470" y="513" text-anchor="middle">250 kbit/s · par trenzado</text>
-  <text class="t" x="1470" y="534" text-anchor="middle">→ Gateway</text>
-  <text class="s" x="1470" y="553" text-anchor="middle">(ESP32 #2)</text>
+  <text class="h3" x="1470" y="494" text-anchor="middle">ESP32 #2</text>
+  <text class="t" x="1470" y="515" text-anchor="middle">Gateway</text>
+  <text class="s" x="1470" y="534" text-anchor="middle">pin GPIO16 (RX)</text>
+  <text class="s" x="1470" y="553" text-anchor="middle">ver diagrama del enlace</text>
 
   <!-- Detalle de divisores -->
   <rect class="panel" x="60" y="790" width="330" height="180" rx="10"/>
@@ -227,7 +221,7 @@
   <text class="s" x="296" y="952">GND</text>
 
   <rect class="panel" x="420" y="790" width="330" height="180" rx="10"/>
-  <text class="h3" x="436" y="816">Fotorresistencia de la zona 1</text>
+  <text class="h3" x="436" y="816">Fotorresistencia suelta (zona 1)</text>
   <text class="p" x="440" y="872">3.3 V</text>
   <line class="esq" x1="484" y1="868" x2="540" y2="868"/>
   <rect class="res" x="540" y="860" width="56" height="16" rx="2"/>
@@ -265,5 +259,5 @@
   <text class="s" x="1158" y="882">• Nada conectado a GPIO12 (impide el arranque)</text>
   <text class="s" x="1158" y="902">• Analógicos solo en GPIO32–39 (ADC1)</text>
   <text class="s" x="1158" y="922">• Alimenta por USB o con 7–9 V, no con 12 V</text>
-  <text class="s" x="1158" y="942">• Entre CANH y CANL deben medirse ≈ 60 Ω (apagado)</text>
+  <text class="s" x="1158" y="942">• Jumper GPIO17 ↔ GPIO16 y cable al gateway</text>
 </svg>

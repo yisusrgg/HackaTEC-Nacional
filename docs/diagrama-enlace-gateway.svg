@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 900" width="1400" height="900" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
+  <title>Enlace CAN entre el nodo (ESP32 #1) y el gateway (ESP32 #2), sin transceptor</title>
+  <style>
+    .panel { fill: #f8fafc; stroke: #e2e8f0; stroke-width: 1.2; }
+    .t { font-size: 13px; font-weight: 600; fill: #0f172a; }
+    .s { font-size: 12px; fill: #475569; }
+    .p { font-size: 11.5px; font-weight: 700; fill: #334155; font-family: ui-monospace, Consolas, monospace; }
+    .pin { font-size: 11.5px; font-weight: 600; fill: #e2e8f0; font-family: ui-monospace, Consolas, monospace; }
+    .gris { font-size: 11.5px; fill: #94a3b8; }
+    .rojo { font-size: 12px; font-weight: 700; fill: #dc2626; }
+    .cable { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    .datos { stroke: #2563eb; } .gnd { stroke: #111827; }
+    .res { fill: #ffffff; stroke: #334155; stroke-width: 1.5; }
+    .punto { fill: #2563eb; }
+    .pd { fill: #fbbf24; stroke: #92400e; stroke-width: 1; }
+    .h1 { font-size: 24px; font-weight: 700; fill: #0f172a; }
+    .h2 { font-size: 14px; fill: #475569; }
+    .h3 { font-size: 14px; font-weight: 700; fill: #0f172a; }
+  </style>
+  <rect width="1400" height="900" fill="#ffffff"/>
+
+  <text class="h1" x="60" y="58">Enlace nodo → gateway · CAN sin transceptor</text>
+  <text class="h2" x="60" y="86">Tramas CAN reales por cables de 3.3 V · un solo sentido · cables de menos de 1 m · ambas placas con USB</text>
+
+  <!-- ESP32 #1 -->
+  <rect x="120" y="150" width="300" height="400" rx="14" fill="#0f172a"/>
+  <text x="270" y="190" text-anchor="middle" font-size="16" font-weight="700" fill="#ffffff">ESP32 #1 · Nodo de sensores</text>
+  <text class="gris" x="270" y="214" text-anchor="middle">modo NO_ACK (transmite sin esperar confirmación)</text>
+  <text class="pin" x="404" y="304" text-anchor="end">TX2 · GPIO17</text>
+  <text class="pin" x="404" y="364" text-anchor="end">RX2 · GPIO16</text>
+  <text class="pin" x="404" y="474" text-anchor="end">GND</text>
+  <g class="pd"><circle cx="420" cy="300" r="5"/><circle cx="420" cy="360" r="5"/><circle cx="420" cy="470" r="5"/></g>
+
+  <!-- Jumper en el nodo -->
+  <path class="cable datos" d="M420,300 H455 V360 H420"/>
+  <circle class="punto" cx="455" cy="300" r="4.5"/><circle class="punto" cx="455" cy="360" r="4.5"/>
+  <text class="rojo" x="468" y="334">JUMPER</text>
+  <text class="s" x="468" y="350">17 ↔ 16</text>
+
+  <!-- Cable 1: señal -->
+  <line class="cable datos" x1="455" y1="300" x2="610" y2="300"/>
+  <rect class="res" x="610" y="292" width="76" height="16" rx="2"/>
+  <text class="s" x="648" y="328" text-anchor="middle">330 Ω (opcional)</text>
+  <line class="cable datos" x1="686" y1="300" x2="960" y2="300"/>
+  <polygon points="816,292 832,300 816,308" fill="#2563eb"/>
+  <text class="t" x="790" y="262" text-anchor="middle">Cable 1 · señal CAN</text>
+  <text class="s" x="790" y="278" text-anchor="middle">GPIO17 del nodo → GPIO16 del gateway</text>
+
+  <!-- Cable 2: GND -->
+  <line class="cable gnd" x1="420" y1="470" x2="960" y2="470"/>
+  <text class="t" x="690" y="452" text-anchor="middle">Cable 2 · GND común</text>
+  <text class="s" x="690" y="494" text-anchor="middle">GND del nodo → GND del gateway</text>
+
+  <!-- ESP32 #2 -->
+  <rect x="960" y="150" width="300" height="400" rx="14" fill="#0f172a"/>
+  <text x="1110" y="190" text-anchor="middle" font-size="16" font-weight="700" fill="#ffffff">ESP32 #2 · Gateway</text>
+  <text class="gris" x="1110" y="214" text-anchor="middle">modo LISTEN_ONLY (solo escucha, no confirma)</text>
+  <text class="pin" x="976" y="304">RX2 · GPIO16</text>
+  <text class="pin" x="976" y="364">TX2 · GPIO17</text>
+  <text class="pin" x="976" y="474">GND</text>
+  <g class="pd"><circle cx="960" cy="300" r="5"/><circle cx="960" cy="360" r="5"/><circle cx="960" cy="470" r="5"/></g>
+  <text class="rojo" x="1100" y="364">SIN CONECTAR</text>
+  <line x1="926" y1="346" x2="946" y2="374" stroke="#dc2626" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="946" y1="346" x2="926" y2="374" stroke="#dc2626" stroke-width="3.5" stroke-linecap="round"/>
+  <text class="gris" x="1110" y="520" text-anchor="middle">Wi-Fi 2.4 GHz → servidor Django (HTTPS)</text>
+
+  <!-- Paneles inferiores -->
+  <rect class="panel" x="60" y="600" width="400" height="260" rx="10"/>
+  <text class="h3" x="80" y="630">Cableado (solo 3 conexiones)</text>
+  <text class="t" x="80" y="664">1 · En el nodo</text>
+  <text class="s" x="80" y="684">Jumper entre GPIO17 y GPIO16.</text>
+  <text class="t" x="80" y="718">2 · Del nodo al gateway</text>
+  <text class="s" x="80" y="738">GPIO17 (nodo) → GPIO16 (gateway).</text>
+  <text class="s" x="80" y="756">Con la resistencia de 330 Ω en serie si hay.</text>
+  <text class="t" x="80" y="790">3 · Tierra</text>
+  <text class="s" x="80" y="810">GND (nodo) → GND (gateway).</text>
+  <text class="rojo" x="80" y="842">El GPIO17 del gateway NO se conecta a nada.</text>
+
+  <rect class="panel" x="500" y="600" width="400" height="260" rx="10"/>
+  <text class="h3" x="520" y="630">Qué hace cada modo</text>
+  <text class="t" x="520" y="664">Nodo · NO_ACK</text>
+  <text class="s" x="520" y="684">Transmite sin esperar que alguien confirme.</text>
+  <text class="s" x="520" y="702">Lee su propia señal por el jumper (GPIO16).</text>
+  <text class="t" x="520" y="736">Gateway · LISTEN_ONLY</text>
+  <text class="s" x="520" y="756">Solo recibe: no confirma ni manda errores.</text>
+  <text class="t" x="520" y="790">Un solo sentido</text>
+  <text class="s" x="520" y="810">El gateway no tiene cable para mandarle</text>
+  <text class="s" x="520" y="828">órdenes al nodo (segmentación por hardware).</text>
+
+  <rect class="panel" x="940" y="600" width="400" height="260" rx="10"/>
+  <text class="h3" x="960" y="630">Si el gateway no recibe tramas</text>
+  <text class="s" x="960" y="664">1. ¿Está el jumper 17 ↔ 16 en el nodo?</text>
+  <text class="s" x="960" y="688">2. ¿El cable llega al GPIO16 del gateway</text>
+  <text class="s" x="960" y="706">    y no al 17?</text>
+  <text class="s" x="960" y="730">3. ¿Las dos tierras están unidas?</text>
+  <text class="s" x="960" y="754">4. ¿SIN_TRANSCEPTOR 1 en los dos config_*.h?</text>
+  <text class="s" x="960" y="778">5. ¿El cable mide menos de 1 m?</text>
+  <text class="s" x="960" y="810">Comprobar: en el monitor serie del gateway,</text>
+  <text class="s" x="960" y="828">el comando «estado» debe mostrar «recibidas»</text>
+  <text class="s" x="960" y="846">subiendo.</text>
+</svg>

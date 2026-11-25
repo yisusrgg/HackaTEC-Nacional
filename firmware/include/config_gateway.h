@@ -5,8 +5,8 @@
 
 #define GATEWAY_FW "0.1.0"
 
-#define PIN_CAN_TX 17  // → CTX del SN65HVD230
-#define PIN_CAN_RX 16  // ← CRX del SN65HVD230
+#define PIN_CAN_TX 17  // sin transceptor: SIN CONECTAR (el gateway solo escucha) · con transceptor: → CTX
+#define PIN_CAN_RX 16  // sin transceptor: cable desde GPIO17 del nodo · con transceptor: ← CRX
 #define PIN_LED 2
 
 #define LOTE_MAX_TRAMAS 40       // tramas por lote...
