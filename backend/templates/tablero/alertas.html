@@ -85,11 +85,11 @@
     {% endif %}
   </form>
 
-  {% if grupos %}
+  {% if repetidas %}
     <section class="panel">
       <div class="panel-encabezado"><h3>Fallas que se repiten</h3><span class="secundario texto-chico">misma señal y tipo en varias unidades</span></div>
       <ul class="pendientes">
-        {% for g in grupos %}
+        {% for g in repetidas %}
           <li class="pendiente-aviso">
             <a href="?estado={{ filtro }}&amp;senal={{ g.senal__codigo }}">{{ g.senal__nombre }} · {{ g.tipo_texto|lower }}</a>
             <span class="secundario">{{ g.n }} alerta{{ g.n|pluralize }} · {{ g.unidades }} unidad{{ g.unidades|pluralize:"es" }}</span>

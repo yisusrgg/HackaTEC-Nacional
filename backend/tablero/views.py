@@ -213,7 +213,7 @@ class AlertasView(VistaProtegida, ListView):
             filtros=[("activas", "Activas"), ("mis", "Mis pendientes"), ("resueltas", "Resueltas"), ("todas", "Todas")],
             clientes=Cliente.objects.filter(vehiculos__isnull=False).distinct().order_by("nombre_comercial"),
             autobuses=autobuses, severidades=self.SEVERIDADES, subsistemas=self.SUBSISTEMAS, regiones=Region.choices,
-            opciones_tomada=self.TOMADA, grupos=self._grupos() if self.filtro in ("activas", "mis") else [],
+            opciones_tomada=self.TOMADA, repetidas=self._grupos() if self.filtro in ("activas", "mis") else [],
             mis_pendientes=Alerta.objects.filter(estado__in=Alerta.ACTIVAS, tomada_por=self.request.user).count(),
         )
         return contexto
