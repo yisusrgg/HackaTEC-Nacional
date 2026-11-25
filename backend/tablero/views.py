@@ -81,8 +81,10 @@ class SenalView(VistaProtegida, DetailView):
         contexto = super().get_context_data(**kwargs)
         senal = self.object
         nodo = nodo_seleccionado(self.request.GET.get("nodo"))
+        regresar_a = (reverse("tablero:monitoreo", args=[nodo.gateway.vehiculo_id]) + f"?nodo={nodo.pk}"
+                      if nodo else reverse("tablero:autobuses"))
         contexto.update(
-            nodo=nodo,
+            nodo=nodo, regresar_a=regresar_a,
             nodos=Nodo.objects.filter(gateway__vehiculo_id=nodo.gateway.vehiculo_id if nodo else None)
                               .order_by("gateway_id", "numero"),
             rangos=[(15, "15 min"), (60, "1 h"), (360, "6 h"), (1440, "24 h"), (10080, "7 días")],

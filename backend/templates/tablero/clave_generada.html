@@ -5,6 +5,7 @@
 {% block contenido %}
 <div class="pantalla angosto">
   <div>
+    {% url 'tablero:autobuses' as destino %}{% include "tablero/_regresar.html" with destino=destino %}
     <p class="rotulo">Provisionar dispositivo</p>
     <h2 class="titulo-pantalla">Clave nueva para {{ dispositivo }}</h2>
   </div>

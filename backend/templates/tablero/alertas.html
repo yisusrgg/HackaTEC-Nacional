@@ -7,6 +7,7 @@
 <div class="pantalla">
   <div class="pantalla-encabezado">
     <div>
+      {% if f.autobus %}{% url 'tablero:monitoreo' f.autobus.pk as destino %}{% include "tablero/_regresar.html" with destino=destino %}{% endif %}
       <p class="rotulo">Bandeja de alertas</p>
       <h2 class="titulo-pantalla">{% if filtro == "activas" %}Alertas activas{% elif filtro == "resueltas" %}Alertas resueltas{% else %}Todas las alertas{% endif %}{% if f.autobus %} <small>· <span class="mono">{{ f.autobus.identificador }}</span></small>{% endif %}</h2>
     </div>

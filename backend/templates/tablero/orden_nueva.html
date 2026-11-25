@@ -5,7 +5,7 @@
 {% block contenido %}
 <div class="pantalla angosto">
   <div>
-    <a href="{% if alerta %}{% url 'tablero:alertas' %}{% else %}{% url 'tablero:ordenes' %}{% endif %}" class="enlace-discreto">← {% if alerta %}Alertas{% else %}Órdenes de servicio{% endif %}</a>
+    {% if alerta %}{% url 'tablero:alertas' as destino %}{% else %}{% url 'tablero:ordenes' as destino %}{% endif %}{% include "tablero/_regresar.html" with destino=destino %}
     <p class="rotulo espacio-arriba">Servicio y reparaciones</p>
     <h2 class="titulo-pantalla">Nueva orden de servicio</h2>
   </div>

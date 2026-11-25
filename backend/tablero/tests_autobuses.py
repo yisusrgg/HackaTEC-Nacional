@@ -128,6 +128,22 @@ class AutobusesTests(TestCase):
         self.assertIsNone(respuesta.context["f"]["autobus"])
         self.assertEqual([v.identificador for v in respuesta.context["autobuses"]], ["D-1"])
 
+    def test_pantallas_secundarias_tienen_regresar(self):
+        monitoreo = reverse("tablero:monitoreo", args=[self.bus_critico.pk])
+        casos = [
+            (monitoreo, reverse("tablero:autobuses")),
+            (reverse("tablero:senal", args=["ac.temperatura"]) + f"?nodo={self.nodo_critico.pk}",
+             f"{monitoreo}?nodo={self.nodo_critico.pk}"),
+            (reverse("tablero:alertas") + f"?autobus={self.bus_critico.pk}", monitoreo),
+            (reverse("tablero:orden_nueva"), reverse("tablero:ordenes")),
+        ]
+        for url, destino in casos:
+            with self.subTest(url=url):
+                self.assertContains(self.client.get(url), f'<p class="regresar"><a href="{destino}" data-regresar>', html=False)
+        # Las pantallas principales del menú no lo llevan.
+        self.assertNotContains(self.client.get(reverse("tablero:alertas")), "data-regresar")
+        self.assertNotContains(self.client.get(reverse("tablero:autobuses")), "data-regresar")
+
     def test_revocar_regresa_a_la_misma_lista_filtrada(self):
         self.client.force_login(self.admin)
         siguiente = reverse("tablero:autobuses") + f"?cliente={self.dos.pk}"

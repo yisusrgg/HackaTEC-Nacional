@@ -8,6 +8,21 @@
     if (mensaje && !window.confirm(mensaje)) evento.preventDefault();
   });
 
+  // <a data-regresar href="..."> vuelve a la pantalla anterior si vino de otra página de este sitio;
+  // si no (entrada directa, o la anterior es esta misma tras enviar un formulario), sigue su href.
+  document.addEventListener("click", (evento) => {
+    const enlace = evento.target.closest("[data-regresar]");
+    if (!enlace || evento.ctrlKey || evento.metaKey || evento.shiftKey) return;
+    let anterior = null;
+    try { anterior = document.referrer ? new URL(document.referrer) : null; } catch { anterior = null; }
+    const mismoSitio = anterior && anterior.origin === window.location.origin;
+    const mismaPantalla = anterior && anterior.pathname === window.location.pathname;
+    if (mismoSitio && !mismaPantalla && window.history.length > 1) {
+      evento.preventDefault();
+      window.history.back();
+    }
+  });
+
   // <select data-autoenviar> envía su formulario al cambiar de opción.
   document.addEventListener("change", (evento) => {
     if (evento.target.matches("[data-autoenviar]")) evento.target.form.submit();

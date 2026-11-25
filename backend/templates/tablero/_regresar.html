@@ -1,0 +1,6 @@
+{% comment %}
+  Línea «← REGRESAR» arriba de las pantallas secundarias. Con JavaScript vuelve a la pantalla anterior (conserva sus
+  filtros); si no hay una pantalla anterior de este sitio, o se llegó tras enviar un formulario a la misma página,
+  va a `destino`. El enlace interno es necesario para que funcione con teclado y lector de pantalla.
+  Uso: {% url 'tablero:ordenes' as destino %}{% include "tablero/_regresar.html" with destino=destino %}
+{% endcomment %}<p class="regresar"><a href="{{ destino }}" data-regresar><span class="regresar-flecha" aria-hidden="true">←</span><span class="regresar-texto">Regresar</span></a></p>

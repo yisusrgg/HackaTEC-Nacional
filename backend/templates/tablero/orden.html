@@ -7,7 +7,7 @@
 <div class="pantalla">
   <div class="pantalla-encabezado">
     <div>
-      <a href="{% url 'tablero:ordenes' %}" class="enlace-discreto">← Órdenes de servicio</a>
+      {% url 'tablero:ordenes' as destino %}{% include "tablero/_regresar.html" with destino=destino %}
       <p class="rotulo espacio-arriba">{{ orden.vehiculo }}</p>
       <h2 class="titulo-pantalla">{{ orden.titulo }} <small class="mono">{{ orden.folio }}</small></h2>
     </div>

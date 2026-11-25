@@ -710,3 +710,34 @@ textarea.campo { resize: vertical; }
   border-top: 1px solid var(--linea);
 }
 .contador-resultados { font-size: 13px; color: var(--gris); }
+
+
+
+/* ---------- 28. Línea «← REGRESAR» en pantallas secundarias ---------- */
+.regresar {
+  display: flex; align-items: center;
+  margin: 0 0 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--linea);
+}
+.regresar a {
+  display: inline-flex; align-items: center; gap: 12px;
+  color: var(--gris); text-decoration: none;
+  border-radius: 99px;
+}
+.regresar-flecha {
+  display: inline-grid; place-items: center;
+  width: 30px; height: 30px;
+  border: 1px solid var(--linea-fuerte); border-radius: 50%;
+  background: var(--papel);
+  font-size: 15px; line-height: 1; color: var(--tinta);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+.regresar-texto {
+  font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+  transition: color 0.15s ease;
+}
+.regresar a:hover .regresar-flecha { background: var(--tinta); border-color: var(--tinta); color: var(--papel); transform: translateX(-3px); }
+.regresar a:hover .regresar-texto { color: var(--tinta); }
+.regresar a:focus-visible { outline: 2px solid var(--enlace); outline-offset: 4px; }
+.pantalla-encabezado .regresar, .angosto .regresar { margin-bottom: 16px; }

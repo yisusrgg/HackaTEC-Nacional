@@ -4,6 +4,7 @@
 {% block encabezado %}Monitoreo en tiempo real{% endblock %}
 
 {% block contenido %}
+{% url 'tablero:autobuses' as destino %}{% include "tablero/_regresar.html" with destino=destino %}
 {% if not nodo %}
   <div class="panel vacio">
     <h2>{{ vehiculo.identificador }} aún no tiene nodos de sensores</h2>
